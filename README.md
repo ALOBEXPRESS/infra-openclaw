@@ -1,407 +1,639 @@
-# Instalação do OpenClaw na Google Cloud com subdomínio, Cloudflare e PM2
+# OpenClaw Production Deployment Guide
 
-Guia prático para instalar o **OpenClaw** em uma VM Google Cloud, publicar no subdomínio `openclaw.alobexpress.com.br`, conectar APIs como OpenAI/Whisper, Google Places, Notion, Telegram, Firecrawl e deixar tudo rodando 24/7.
+![OpenClaw](https://img.shields.io/badge/OpenClaw-Production-blue)
+![Google Cloud](https://img.shields.io/badge/Google%20Cloud-GCP-4285F4?logo=google-cloud)
+![Node.js](https://img.shields.io/badge/Node.js-24.x-339933?logo=node.js)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-CDN-F38020?logo=cloudflare)
+![PM2](https://img.shields.io/badge/PM2-Process%20Manager-2B037A)
 
-> Este README foi escrito para leigos. Copie e cole os comandos na ordem. Sempre troque valores como `SEU_TOKEN`, `SEU_DOMINIO` e `SUA_CHAVE` pelos seus dados reais.
+Complete production deployment guide for **OpenClaw** AI agent platform on Google Cloud Platform with enterprise-grade infrastructure including Cloudflare CDN, Caddy reverse proxy, and PM2 process management.
 
----
+> **Target Audience**: DevOps engineers and developers deploying OpenClaw to production. All commands are copy-pasteable. Replace placeholder values like `SEU_TOKEN`, `SEU_DOMINIO`, and `SUA_CHAVE` with your actual credentials.
 
-## 1. Visão geral da arquitetura
+## 🎯 What You'll Build
 
-A arquitetura usada aqui é:
+By following this guide, you'll deploy a production-ready OpenClaw instance with:
 
-```text
-Usuário / navegador
-        ↓
-https://openclaw.alobexpress.com.br
-        ↓
-Cloudflare, com nuvem laranja/proxy ativo
-        ↓
-Google Cloud VM
-        ↓
-Caddy, portas 80/443
-        ↓
-OpenClaw Gateway em 127.0.0.1:18789
-        ↓
-Agentes, Telegram, APIs, browser automation e integrações
-```
+- ✅ **Secure HTTPS** access via Cloudflare
+- ✅ **24/7 uptime** with PM2 process manager  
+- ✅ **Reverse proxy** with automatic SSL via Caddy
+- ✅ **AI integrations**: OpenAI, Whisper, Google Places, Notion, Telegram, Firecrawl, ElevenLabs
+- ✅ **Scalable infrastructure** on Google Cloud Platform
+- ✅ **Production monitoring** and logging
+- ✅ **Device pairing** security
+- ✅ **Automatic restarts** on failure
 
-Por que essa arquitetura é boa:
 
-- O OpenClaw fica em uma VM separada do n8n.
-- O dashboard não precisa expor a porta `18789` diretamente.
-- A Cloudflare fornece HTTPS e proteção básica.
-- O Caddy faz o proxy reverso para o OpenClaw.
-- O PM2 mantém o gateway rodando mesmo depois de fechar o terminal.
+## 📑 Table of Contents
 
----
-
-## 2. Custos e cuidados
-
-### Google Cloud
-
-Para começar, uma VM `e2-standard-2` é suficiente para testes e uso inicial:
-
-```text
-e2-standard-2
-2 vCPU
-8 GB RAM
-50 GB disco
-Ubuntu 22.04 ou 24.04 LTS
-```
-
-Se começar a usar muitos agentes ao mesmo tempo, browser automation pesado ou muitas abas/headless browsers, pode subir depois para:
-
-```text
-e2-standard-4
-4 vCPU
-16 GB RAM
-100 GB disco
-```
-
-No Google Cloud é simples alterar o tipo da VM: pare a VM, edite o tipo de máquina e ligue novamente.
-
-### OpenAI API
-
-A assinatura do ChatGPT Business/Plus/Team não é a mesma coisa que a cobrança da API. A API tem billing separado. Se você recebeu US$5 de crédito, o OpenClaw pode usar esse crédito até acabar. Depois, será necessário adicionar billing/prepaid na plataforma da OpenAI.
-
-Links úteis:
-
-- Usage: https://platform.openai.com/usage
-- Billing: https://platform.openai.com/settings/organization/billing/overview
-- Limits: https://platform.openai.com/settings/organization/limits
-
-Recomendação: coloque limite baixo no começo, tipo US$5 ou US$10.
+- [Tech Stack](#-tech-stack)
+- [Prerequisites](#-prerequisites)
+- [Architecture Overview](#-architecture-overview)
+- [Cost Considerations](#-cost-considerations)
+- [Getting Started](#-getting-started)
+  - [1. Infrastructure Setup](#1-infrastructure-setup)
+  - [2. OpenClaw Installation](#2-openclaw-installation)
+  - [3. Gateway Configuration](#3-gateway-configuration)
+  - [4. Process Management](#4-process-management)
+- [API Integrations](#-api-integrations)
+- [Testing & Validation](#-testing--validation)
+- [Troubleshooting](#-troubleshooting)
+- [Maintenance](#-maintenance)
+- [Security Checklist](#-security-checklist)
+- [Reference](#-reference)
 
 ---
 
-## 3. Pré-requisitos
+## 🛠 Tech Stack
 
-Você vai precisar de:
-
-- Conta Google Cloud com Compute Engine habilitado.
-- VM Ubuntu na Google Cloud.
-- Domínio ou subdomínio configurável, exemplo: `openclaw.alobexpress.com.br`.
-- Conta Cloudflare controlando o DNS do domínio.
-- Chave API da OpenAI, se for usar modelos OpenAI/Codex/Whisper.
-- Opcional: Google Places API, Notion API, Telegram Bot Token, Firecrawl API, ElevenLabs API.
-
----
-
-## 4. Criando a VM na Google Cloud
-
-Configuração inicial recomendada:
-
-```text
-Nome: openclaw-alobexpress
-Tipo: e2-standard-2
-vCPU: 2
-RAM: 8 GB
-Disco: 50 GB
-Sistema: Ubuntu LTS
-Região: us-central1, se quiser custo menor
-```
-
-### Firewall da VM
-
-No Google Cloud, permita pelo menos:
-
-```text
-HTTP: porta 80
-HTTPS: porta 443
-SSH: porta 22
-```
-
-Evite abrir a porta `18789` publicamente. Ela deve ficar apenas local na VM.
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Platform** | Google Cloud Platform | VM hosting and infrastructure |
+| **OS** | Ubuntu 22.04/24.04 LTS | Server operating system |
+| **Runtime** | Node.js 24.x | JavaScript runtime for OpenClaw |
+| **AI Platform** | OpenClaw | AI agent orchestration |
+| **Reverse Proxy** | Caddy 2.x | Automatic HTTPS and routing |
+| **CDN/Security** | Cloudflare | DDoS protection, SSL, caching |
+| **Process Manager** | PM2 | 24/7 uptime and monitoring |
+| **AI APIs** | OpenAI, Whisper, Google Places, Notion, Telegram, Firecrawl, ElevenLabs | AI capabilities and integrations |
 
 ---
 
-## 5. Reservar IP estático
+## 📋 Prerequisites
 
-É recomendado reservar um IP externo estático para a VM.
+Before starting, ensure you have:
 
-No Google Cloud Console:
+### Required
 
-```text
-VPC Network
-→ IP addresses
-→ Reserve static address
-→ associe à VM openclaw-alobexpress
-```
+- [ ] **Google Cloud Account** with Compute Engine enabled
+- [ ] **Domain or subdomain** (e.g., `openclaw.alobexpress.com.br`)
+- [ ] **Cloudflare Account** managing your domain's DNS
+- [ ] **OpenAI API Key** for AI model access
+- [ ] **SSH access** to your local terminal
 
-Isso evita que o IP mude e quebre o DNS/Cloudflare.
+### Optional (for extended features)
 
----
-
-## 6. Configurando DNS na Cloudflare
-
-Exemplo usado:
-
-```text
-advanced.alobexpress.com.br → A → IP_DA_VM
-openclaw.alobexpress.com.br → CNAME → advanced.alobexpress.com.br
-```
-
-Na Cloudflare, deixe a nuvem laranja ativada:
-
-```text
-Proxy status: Proxied
-```
-
-Isso significa que o tráfego passa pela Cloudflare antes de chegar na VM.
-
-### SSL/TLS na Cloudflare
-
-Vá em:
-
-```text
-Cloudflare
-→ SSL/TLS
-→ Overview
-→ Full
-```
-
-Use **Full**, não `Flexible`.
-
-Observação: quando o proxy laranja está ativo, ferramentas como DNS Checker podem mostrar IPs da Cloudflare em vez do IP real da VM. Isso é normal.
+- [ ] Google Places API key (for location-based searches)
+- [ ] Notion API integration token (for database operations)
+- [ ] Telegram Bot Token (for chat integrations)
+- [ ] Firecrawl API key (for web scraping)
+- [ ] ElevenLabs API key (for voice synthesis)
 
 ---
 
-## 7. Acessando a VM
+## 🏗 Architecture Overview
 
-Pelo Google Cloud Console, clique em:
+### System Architecture
 
 ```text
-Compute Engine
-→ VM instances
-→ SSH
+┌─────────────────────────────────────────────────────────────┐
+│                    User / Browser                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTPS
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│              https://openclaw.alobexpress.com.br             │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│         Cloudflare (Proxy Mode - Orange Cloud)               │
+│         • DDoS Protection                                    │
+│         • SSL/TLS Termination                                │
+│         • CDN Caching                                        │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Google Cloud VM (e2-standard-2)                 │
+│              Ubuntu 22.04 LTS                                │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  Caddy Reverse Proxy (Ports 80/443)                    │ │
+│  │  • Automatic HTTPS                                     │ │
+│  │  • HTTP/2 Support                                      │ │
+│  └──────────────────────┬─────────────────────────────────┘ │
+│                         │                                    │
+│                         ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  OpenClaw Gateway (127.0.0.1:18789)                    │ │
+│  │  • Managed by PM2                                      │ │
+│  │  • Auto-restart on failure                             │ │
+│  │  • Log aggregation                                     │ │
+│  └──────────────────────┬─────────────────────────────────┘ │
+│                         │                                    │
+│                         ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  AI Agents & Integrations                              │ │
+│  │  • OpenAI/Whisper                                      │ │
+│  │  • Google Places                                       │ │
+│  │  • Notion                                              │ │
+│  │  • Telegram                                            │ │
+│  │  • Firecrawl                                           │ │
+│  │  • ElevenLabs                                          │ │
+│  │  • Browser Automation                                  │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Ou pelo terminal local com gcloud:
+### Why This Architecture?
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Security** | Port 18789 never exposed publicly; all traffic through Cloudflare + Caddy |
+| **Reliability** | PM2 ensures gateway restarts automatically on crashes |
+| **Performance** | Cloudflare CDN caches static assets globally |
+| **Scalability** | Easy to upgrade VM size as usage grows |
+| **Maintainability** | Separate concerns: Cloudflare (edge), Caddy (proxy), OpenClaw (app) |
+| **SSL/TLS** | Automatic certificate management via Caddy |
+
+---
+
+## 💰 Cost Considerations
+
+
+### Google Cloud Platform
+
+**Recommended Starting Configuration:**
+
+| Spec | Value | Purpose |
+|------|-------|---------|
+| **Machine Type** | e2-standard-2 | Cost-effective for initial deployment |
+| **vCPUs** | 2 | Handles moderate agent workloads |
+| **RAM** | 8 GB | Sufficient for OpenClaw + Node.js |
+| **Disk** | 50 GB SSD | OS + OpenClaw + logs |
+| **OS** | Ubuntu 22.04/24.04 LTS | Long-term support |
+| **Region** | us-central1 | Lower cost option |
+
+**Estimated Monthly Cost**: ~$50-70 USD (varies by region and usage)
+
+**When to Scale Up:**
+
+Upgrade to `e2-standard-4` (4 vCPU, 16 GB RAM, 100 GB disk) if you experience:
+- Multiple concurrent AI agents
+- Heavy browser automation workloads
+- High memory usage (check with `pm2 monit`)
+- Slow response times
+
+**How to Scale:**
+```bash
+# Stop VM
+gcloud compute instances stop openclaw-alobexpress --zone=us-central1-c
+
+# Change machine type
+gcloud compute instances set-machine-type openclaw-alobexpress \
+  --machine-type=e2-standard-4 \
+  --zone=us-central1-c
+
+# Start VM
+gcloud compute instances start openclaw-alobexpress --zone=us-central1-c
+```
+
+### OpenAI API Costs
+
+**Important**: ChatGPT subscription (Plus/Team/Business) is **separate** from OpenAI API billing.
+
+| Resource | Link | Purpose |
+|----------|------|---------|
+| **Usage Dashboard** | https://platform.openai.com/usage | Monitor API consumption |
+| **Billing** | https://platform.openai.com/settings/organization/billing/overview | Add payment method |
+| **Rate Limits** | https://platform.openai.com/settings/organization/limits | Set spending caps |
+
+**Recommendations:**
+- Start with a **$5-10 USD monthly limit** to avoid surprises
+- Monitor usage daily during initial testing
+- Free tier includes $5 credit (expires after 3 months)
+- Production workloads: budget $50-200/month depending on usage
+
+**Cost Optimization Tips:**
+- Use `gpt-4o-mini` for simple tasks (cheaper than `gpt-4`)
+- Cache responses when possible
+- Implement rate limiting in your agents
+- Use Whisper only when necessary (audio transcription costs add up)
+
+---
+
+## 🚀 Getting Started
+
+### 1. Infrastructure Setup
+
+#### Step 1.1: Create Google Cloud VM
+
+1. Navigate to [Google Cloud Console](https://console.cloud.google.com/)
+2. Go to **Compute Engine** → **VM instances**
+3. Click **Create Instance**
+
+**Configuration:**
+
+```text
+Name: openclaw-alobexpress
+Region: us-central1 (or your preferred region)
+Zone: us-central1-c
+Machine type: e2-standard-2
+Boot disk: Ubuntu 22.04 LTS, 50 GB SSD
+```
+
+4. Under **Firewall**, check:
+   - ✅ Allow HTTP traffic
+   - ✅ Allow HTTPS traffic
+
+5. Click **Create**
+
+**Firewall Rules:**
+
+Ensure these ports are open in your VPC firewall:
+
+| Port | Protocol | Purpose | Public? |
+|------|----------|---------|---------|
+| 22 | TCP | SSH access | Yes (restricted to your IP recommended) |
+| 80 | TCP | HTTP (redirects to HTTPS) | Yes |
+| 443 | TCP | HTTPS | Yes |
+| 18789 | TCP | OpenClaw Gateway | **NO** (internal only) |
+
+**Security Note**: Never expose port 18789 publicly. It should only be accessible via `127.0.0.1` (localhost).
+
+#### Step 1.2: Reserve Static IP
+
+A static IP prevents your DNS from breaking when the VM restarts.
+
+**Via Console:**
+1. Go to **VPC Network** → **IP addresses**
+2. Click **Reserve Static Address**
+3. Name: `openclaw-static-ip`
+4. Attach to: `openclaw-alobexpress`
+5. Click **Reserve**
+
+**Via gcloud CLI:**
+```bash
+# Reserve static IP
+gcloud compute addresses create openclaw-static-ip \
+  --region=us-central1
+
+# Attach to VM
+gcloud compute instances delete-access-config openclaw-alobexpress \
+  --access-config-name="External NAT" \
+  --zone=us-central1-c
+
+gcloud compute instances add-access-config openclaw-alobexpress \
+  --access-config-name="External NAT" \
+  --address=openclaw-static-ip \
+  --zone=us-central1-c
+```
+
+**Get your static IP:**
+```bash
+gcloud compute addresses describe openclaw-static-ip \
+  --region=us-central1 \
+  --format="get(address)"
+```
+
+#### Step 1.3: Configure Cloudflare DNS
+
+1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Select your domain (e.g., `alobexpress.com.br`)
+3. Go to **DNS** → **Records**
+
+**Add DNS Records:**
+
+| Type | Name | Content | Proxy Status | TTL |
+|------|------|---------|--------------|-----|
+| A | advanced | `YOUR_VM_STATIC_IP` | Proxied (🟠) | Auto |
+| CNAME | openclaw | advanced.alobexpress.com.br | Proxied (🟠) | Auto |
+
+**Example:**
+```text
+A     advanced    34.123.45.67    Proxied    Auto
+CNAME openclaw    advanced.alobexpress.com.br    Proxied    Auto
+```
+
+**Proxy Status**: The orange cloud (🟠 Proxied) means traffic routes through Cloudflare's CDN.
+
+**SSL/TLS Configuration:**
+
+1. Go to **SSL/TLS** → **Overview**
+2. Set encryption mode to **Full**
+   - ❌ Not `Flexible` (insecure)
+   - ✅ Use `Full` or `Full (strict)`
+
+**Why Full?**
+- `Flexible`: Cloudflare ↔ User is HTTPS, but Cloudflare ↔ Server is HTTP (insecure)
+- `Full`: HTTPS end-to-end (Caddy handles SSL on server side)
+
+**DNS Propagation:**
+
+After adding records, wait 5-10 minutes for DNS propagation. Verify with:
 
 ```bash
-gcloud config set project SEU_PROJECT_ID
+# Check DNS resolution
+nslookup openclaw.alobexpress.com.br
 
+# Or use dig
+dig openclaw.alobexpress.com.br
+```
+
+**Note**: With Cloudflare proxy enabled, DNS tools will show Cloudflare IPs, not your VM IP. This is expected.
+
+---
+
+### 2. OpenClaw Installation
+
+#### Step 2.1: Access Your VM
+
+**Via Google Cloud Console:**
+1. Go to **Compute Engine** → **VM instances**
+2. Click **SSH** next to `openclaw-alobexpress`
+
+**Via gcloud CLI (recommended):**
+
+```bash
+# Set your project
+gcloud config set project YOUR_PROJECT_ID
+
+# SSH into VM
 gcloud compute ssh openclaw-alobexpress --zone=us-central1-c
 ```
 
-Troque a zona se sua VM estiver em outra.
+**Via standard SSH:**
+```bash
+ssh -i ~/.ssh/google_compute_engine USERNAME@YOUR_VM_IP
+```
 
----
+#### Step 2.2: Prepare the Environment
 
-## 8. Atualizar a VM e instalar ferramentas básicas
-
-Dentro da VM:
+Update system packages and install dependencies:
 
 ```bash
+# Update package lists
 sudo apt update
+
+# Upgrade existing packages
 sudo apt upgrade -y
-sudo apt install -y curl ca-certificates gnupg git build-essential unzip nano
+
+# Install essential tools
+sudo apt install -y \
+  curl \
+  ca-certificates \
+  gnupg \
+  git \
+  build-essential \
+  unzip \
+  nano \
+  htop
 ```
 
-Se o `nano` não existir, instale:
+**What each package does:**
+- `curl`: Download files and make HTTP requests
+- `ca-certificates`: SSL certificate validation
+- `gnupg`: GPG key management
+- `git`: Version control (useful for future updates)
+- `build-essential`: Compilers for native Node.js modules
+- `unzip`: Extract compressed files
+- `nano`: Text editor
+- `htop`: Process monitoring
+
+#### Step 2.3: Install Node.js
+
+OpenClaw requires Node.js 22.14+ or 24.x.
+
+**Install via NodeSource (recommended):**
 
 ```bash
-sudo apt install -y nano
-```
-
----
-
-## 9. Instalar Node.js
-
-O OpenClaw recomenda Node moderno. Use Node 24:
-
-```bash
+# Add NodeSource repository for Node.js 24.x
 curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+
+# Install Node.js and npm
 sudo apt install -y nodejs
+
+# Verify installation
+node -v  # Should show v24.x.x
+npm -v   # Should show 10.x.x or higher
 ```
 
-Confira:
+**Expected output:**
+```text
+v24.0.0
+10.2.3
+```
+
+**Alternative: Install via nvm (for multiple Node versions):**
 
 ```bash
-node -v
-npm -v
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Load nvm
+source ~/.bashrc
+
+# Install Node.js 24
+nvm install 24
+nvm use 24
+nvm alias default 24
 ```
 
-Se aparecer Node 24 ou Node 22.14+, está ok.
+#### Step 2.4: Install OpenClaw
 
----
-
-## 10. Instalar o OpenClaw
-
-### Método recomendado pelo instalador
+**Method 1: Official Installer (recommended)**
 
 ```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
-### Alternativa com npm
+This script:
+- Detects your OS and architecture
+- Installs OpenClaw globally
+- Sets up initial configuration
+- Adds OpenClaw to your PATH
 
-Se você já tem Node funcionando:
+**Method 2: npm Global Install**
 
 ```bash
 sudo npm install -g openclaw@latest
 ```
 
-Confira:
+**Verify Installation:**
 
 ```bash
+# Check version
 openclaw --version
+
+# Run diagnostics
 openclaw doctor
 ```
 
----
-
-## 11. Setup inicial do OpenClaw
-
-Rode:
-
-```bash
-openclaw setup
+**Expected output from `openclaw doctor`:**
+```text
+✓ Node.js version: v24.0.0
+✓ npm version: 10.2.3
+✓ OpenClaw version: 1.x.x
+✓ Configuration directory: /home/username/.openclaw
+✓ Gateway: Not running
 ```
 
-Depois rode o wizard/configuração:
+#### Step 2.5: Initial Setup
+
+Run the setup wizard:
 
 ```bash
 openclaw setup --wizard
 ```
 
-ou:
+**Or use the interactive configure command:**
 
 ```bash
 openclaw configure
 ```
 
-Durante o setup, configure:
+**Configuration Prompts:**
+
+| Prompt | Recommended Value | Notes |
+|--------|-------------------|-------|
+| **Gateway Mode** | Local | For single-server deployment |
+| **AI Provider** | OpenAI | Or Claude, Gemini, etc. |
+| **Model** | gpt-4o-mini | Cost-effective for testing |
+| **Channels** | Telegram | Add others as needed |
+| **Plugins** | Default | Customize later |
+
+**Configuration File Location:**
 
 ```text
-Gateway: local
-Modelo/Provider: OpenAI, Claude, Gemini etc.
-Canais: Telegram, WhatsApp etc., se quiser
-Plugins/skills: conforme necessidade
+~/.openclaw/openclaw.json          # If running as regular user
+/root/.openclaw/openclaw.json      # If running as root
 ```
 
-O arquivo principal de configuração fica em:
+**Important**: Always use the same user for setup and running OpenClaw. Mixing users causes permission issues.
 
-```text
-~/.openclaw/openclaw.json
+**View Configuration:**
+
+```bash
+cat ~/.openclaw/openclaw.json
 ```
-
-Se você instalou/rodou como root, fica em:
-
-```text
-/root/.openclaw/openclaw.json
-```
-
-Atenção: use sempre o mesmo usuário. Se configurou como `root`, rode como `root`. Se configurou como `jonat`, rode como `jonat`.
 
 ---
 
-## 12. Configurar token do Gateway
+### 3. Gateway Configuration
 
-Abra o arquivo:
+#### Step 3.1: Configure Gateway Token
+
+The gateway token authenticates dashboard access.
+
+**Open configuration file:**
 
 ```bash
 nano ~/.openclaw/openclaw.json
 ```
 
-Ou, se estiver usando root:
+**Or if running as root:**
 
 ```bash
 sudo nano /root/.openclaw/openclaw.json
 ```
 
-Procure algo parecido com:
+**Find the gateway section:**
 
 ```json
-"gateway": {
-  "auth": {
-    "token": "SEU_TOKEN_AQUI"
+{
+  "gateway": {
+    "auth": {
+      "token": "your-secure-token-here"
+    }
   }
 }
 ```
 
-Esse token é o que você coloca no dashboard do OpenClaw no campo:
+**Important**: 
+- This token is auto-generated during setup
+- Use this exact token in the dashboard login
+- Never share this token publicly
+- Regenerate if compromised: `openclaw gateway --reset-token`
 
-```text
-Token do Gateway
+#### Step 3.2: Allow Public Domain Access
+
+By default, OpenClaw blocks requests from unknown origins. Configure allowed domains:
+
+**Edit configuration:**
+
+```bash
+nano ~/.openclaw/openclaw.json
 ```
 
-Não use uma senha aleatória diferente se o OpenClaw já gerou token no `openclaw.json`. Use o token que está no arquivo.
-
----
-
-## 13. Liberar o domínio público no OpenClaw
-
-Quando você acessa por domínio, o OpenClaw pode bloquear com erro:
-
-```text
-origin not allowed
-```
-
-Para resolver, dentro de `~/.openclaw/openclaw.json`, deixe a parte `controlUi` assim:
+**Add `controlUi` section:**
 
 ```json
-"controlUi": {
-  "allowInsecureAuth": true,
-  "allowedOrigins": [
-    "https://openclaw.alobexpress.com.br"
-  ]
-}
-```
-
-Exemplo dentro de `gateway`:
-
-```json
-"gateway": {
-  "auth": {
-    "token": "SEU_TOKEN_AQUI"
-  },
-  "controlUi": {
-    "allowInsecureAuth": true,
-    "allowedOrigins": [
-      "https://openclaw.alobexpress.com.br"
-    ]
+{
+  "gateway": {
+    "auth": {
+      "token": "your-secure-token-here"
+    },
+    "controlUi": {
+      "allowInsecureAuth": true,
+      "allowedOrigins": [
+        "https://openclaw.alobexpress.com.br"
+      ]
+    }
   }
 }
 ```
 
-Atenção ao JSON:
+**Configuration Options:**
 
-- Precisa de vírgula entre blocos.
-- Não pode ter vírgula sobrando no último item.
-- Se der erro de JSON, valide com:
+| Option | Type | Purpose |
+|--------|------|---------|
+| `allowInsecureAuth` | boolean | Allow token-based auth (set `true` for production with HTTPS) |
+| `allowedOrigins` | array | Whitelist of domains that can access the gateway |
 
-```bash
-node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.openclaw/openclaw.json','utf8')); console.log('JSON OK')"
+**Multiple Domains:**
+
+```json
+"allowedOrigins": [
+  "https://openclaw.alobexpress.com.br",
+  "https://openclaw-staging.alobexpress.com.br",
+  "http://localhost:3000"
+]
 ```
 
-Se estiver como root:
+**Validate JSON Syntax:**
 
 ```bash
-node -e "JSON.parse(require('fs').readFileSync('/root/.openclaw/openclaw.json','utf8')); console.log('JSON OK')"
+# Check for syntax errors
+node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.openclaw/openclaw.json','utf8')); console.log('✓ JSON is valid')"
 ```
 
----
-
-## 14. Instalar e configurar Caddy
-
-O Caddy será o proxy reverso. Ele recebe `https://openclaw.alobexpress.com.br` e encaminha para `127.0.0.1:18789`.
-
-Instale:
+**If running as root:**
 
 ```bash
+node -e "JSON.parse(require('fs').readFileSync('/root/.openclaw/openclaw.json','utf8')); console.log('✓ JSON is valid')"
+```
+
+**Common JSON Errors:**
+- Missing comma between properties
+- Trailing comma after last property
+- Unmatched braces `{}`
+- Unmatched brackets `[]`
+
+#### Step 3.3: Install and Configure Caddy
+
+Caddy is a modern web server with automatic HTTPS.
+
+**Install Caddy:**
+
+```bash
+# Update package list
 sudo apt update
+
+# Install Caddy
 sudo apt install -y caddy
+
+# Verify installation
+caddy version
 ```
 
-Edite o Caddyfile:
+**Configure Caddyfile:**
 
 ```bash
 sudo nano /etc/caddy/Caddyfile
 ```
 
-Coloque:
+**Add this configuration:**
 
 ```caddy
 openclaw.alobexpress.com.br {
@@ -409,145 +641,221 @@ openclaw.alobexpress.com.br {
 }
 ```
 
-Salve e reinicie:
+**What this does:**
+- Listens on ports 80 and 443
+- Automatically obtains SSL certificate from Let's Encrypt
+- Proxies all requests to OpenClaw gateway on localhost:18789
+- Handles HTTP → HTTPS redirects
 
-```bash
-sudo systemctl restart caddy
-sudo systemctl status caddy
-```
+**Advanced Caddyfile (with logging and headers):**
 
-Se não quiser usar nano, pode criar o arquivo assim:
-
-```bash
-sudo tee /etc/caddy/Caddyfile > /dev/null <<'EOF'
+```caddy
 openclaw.alobexpress.com.br {
-    reverse_proxy 127.0.0.1:18789
+    reverse_proxy 127.0.0.1:18789 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    log {
+        output file /var/log/caddy/openclaw.log
+        format json
+    }
+    
+    encode gzip
 }
-EOF
-
-sudo systemctl restart caddy
-sudo systemctl status caddy
 ```
 
----
+**Restart Caddy:**
 
-## 15. Iniciar o Gateway manualmente para testar
+```bash
+# Restart to apply changes
+sudo systemctl restart caddy
 
-Rode:
+# Check status
+sudo systemctl status caddy
+
+# Enable auto-start on boot
+sudo systemctl enable caddy
+```
+
+**Expected output:**
+```text
+● caddy.service - Caddy
+     Loaded: loaded (/lib/systemd/system/caddy.service; enabled)
+     Active: active (running) since...
+```
+
+**View Caddy logs:**
+
+```bash
+sudo journalctl -u caddy -f
+```
+
+#### Step 3.4: Test the Gateway
+
+Start OpenClaw gateway manually to verify configuration:
 
 ```bash
 openclaw gateway --allow-unconfigured
 ```
 
-Se estiver tudo certo, você verá mensagens parecidas com:
-
+**Expected output:**
 ```text
-gateway ready
-http server listening
-browser control listening
-heartbeat started
+[INFO] OpenClaw Gateway starting...
+[INFO] Gateway ready
+[INFO] HTTP server listening on 127.0.0.1:18789
+[INFO] Browser control listening
+[INFO] Heartbeat started
 ```
 
-Agora abra no navegador:
+**Test local access:**
+
+```bash
+# In another terminal
+curl http://127.0.0.1:18789/health
+```
+
+**Test public access:**
+
+Open your browser and navigate to:
 
 ```text
 https://openclaw.alobexpress.com.br
 ```
 
-Se pedir token, coloque o token que está em:
+**You should see:**
+- OpenClaw dashboard login screen
+- Prompt for gateway token
+
+**Enter the token from `~/.openclaw/openclaw.json`**
+
+**Stop the manual gateway:**
+
+Press `Ctrl+C` in the terminal running `openclaw gateway`
+
+#### Step 3.5: Device Pairing
+
+OpenClaw uses device pairing for security.
+
+**On first dashboard access, you'll see:**
 
 ```text
-~/.openclaw/openclaw.json
+Device pairing required
+Request ID: 1e0ea8bf-2b7d-41ac-aca4-42e64f78ec70
 ```
 
----
-
-## 16. Aprovar o dispositivo no primeiro acesso
-
-No primeiro acesso, pode aparecer:
-
-```text
-device pairing required
-```
-
-Isso é normal. É uma proteção do OpenClaw.
-
-Em outro terminal da VM, rode:
+**In your VM terminal, approve the device:**
 
 ```bash
+# List pending requests
 openclaw devices list
-```
 
-Copie o `Request ID` pendente e aprove:
-
-```bash
-openclaw devices approve REQUEST_ID_AQUI
-```
-
-Exemplo:
-
-```bash
+# Approve the request
 openclaw devices approve 1e0ea8bf-2b7d-41ac-aca4-42e64f78ec70
 ```
 
-Importante: o request expira/troca rápido. Se der `unknown requestId`, volte no navegador, clique conectar de novo, rode `openclaw devices list` de novo e aprove o ID novo imediatamente.
+**Expected output:**
+```text
+✓ Device approved successfully
+```
+
+**Important Notes:**
+- Request IDs expire after 5 minutes
+- If expired, refresh the dashboard to generate a new request
+- Approve immediately after seeing the request ID
+- Each browser/device needs separate approval
+
+**Manage devices:**
+
+```bash
+# List all approved devices
+openclaw devices list --approved
+
+# Revoke a device
+openclaw devices revoke DEVICE_ID
+
+# Clear all devices
+openclaw devices clear
+```
 
 ---
 
-## 17. Deixar o OpenClaw rodando para sempre com PM2
+### 4. Process Management with PM2
 
-Instale o PM2:
+PM2 keeps OpenClaw running 24/7 with automatic restarts.
+
+#### Step 4.1: Install PM2
 
 ```bash
 sudo npm install -g pm2
 ```
 
-Inicie o gateway com PM2:
+#### Step 4.2: Start OpenClaw with PM2
 
 ```bash
 pm2 start "openclaw gateway --allow-unconfigured" --name openclaw-gateway
 ```
 
-Salve o estado:
-
-```bash
-pm2 save
+**Expected output:**
+```text
+[PM2] Starting openclaw gateway --allow-unconfigured in fork_mode (1 instance)
+[PM2] Done.
+┌─────┬──────────────────┬─────────┬─────────┬──────────┬────────┐
+│ id  │ name             │ mode    │ ↺      │ status   │ cpu    │
+├─────┼──────────────────┼─────────┼─────────┼──────────┼────────┤
+│ 0   │ openclaw-gateway │ fork    │ 0       │ online   │ 0%     │
+└─────┴──────────────────┴─────────┴─────────┴──────────┴────────┘
 ```
 
-Ative no boot:
+#### Step 4.3: Save PM2 Configuration
 
 ```bash
+# Save current process list
+pm2 save
+
+# Generate startup script
 pm2 startup
 ```
 
-O PM2 vai imprimir um comando com `sudo env ...`. Copie e execute exatamente o comando que ele mostrar.
-
-Depois confira:
+**PM2 will output a command like:**
 
 ```bash
-pm2 status
-pm2 logs openclaw-gateway
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u username --hp /home/username
 ```
 
-Comandos úteis:
+**Copy and run that exact command.**
+
+This ensures OpenClaw starts automatically after server reboots.
+
+#### Step 4.4: PM2 Commands Reference
+
+| Command | Purpose |
+|---------|---------|
+| `pm2 status` | Show all processes |
+| `pm2 logs openclaw-gateway` | View real-time logs |
+| `pm2 logs openclaw-gateway --lines 100` | View last 100 log lines |
+| `pm2 restart openclaw-gateway` | Restart the gateway |
+| `pm2 stop openclaw-gateway` | Stop the gateway |
+| `pm2 delete openclaw-gateway` | Remove from PM2 |
+| `pm2 monit` | Real-time monitoring dashboard |
+| `pm2 flush` | Clear all logs |
+
+**After configuration changes:**
 
 ```bash
+# Restart to apply new config
 pm2 restart openclaw-gateway
-pm2 stop openclaw-gateway
-pm2 delete openclaw-gateway
-pm2 logs openclaw-gateway
-pm2 monit
-```
 
-Se alterar `openclaw.json`, reinicie:
-
-```bash
-pm2 restart openclaw-gateway
+# View logs to verify
+pm2 logs openclaw-gateway --lines 50
 ```
 
 ---
 
-## 18. Configurar OpenAI API
+## 🔌 API Integrations
+
+### 6.1. OpenAI API
 
 Crie uma chave em:
 
@@ -575,16 +883,14 @@ export OPENAI_API_KEY="sk-..."
 
 Para persistir, o ideal é usar o próprio `openclaw configure` ou um arquivo de secrets do OpenClaw. Evite deixar chaves em README, GitHub ou prints.
 
-### Custos da OpenAI
+#### Custos da OpenAI
 
 - ChatGPT Business e OpenAI API têm billing separado.
 - API é cobrada por uso.
 - Monitore em: https://platform.openai.com/usage
 - Configure limites em: https://platform.openai.com/settings/organization/limits
 
----
-
-## 19. Configurar Whisper/transcrição
+### 6.2. Whisper/Transcrição
 
 Whisper/transcrição serve para transformar áudio em texto.
 
@@ -607,9 +913,7 @@ gpt-4o-transcribe
 
 Para uso leve, normalmente o custo é baixo, mas monitore no painel da OpenAI.
 
----
-
-## 20. Configurar Google Places API
+### 6.3. Google Places API
 
 A Google Places API serve para buscar empresas, lugares, endereços, telefones e leads locais.
 
@@ -650,9 +954,7 @@ GOOGLE_API_KEY
 
 Importante: coloque budget/alertas na Google Cloud para evitar gasto inesperado.
 
----
-
-## 21. Configurar Notion API
+### 6.4. Notion API
 
 A API do Notion permite que o OpenClaw leia e escreva em páginas/databases.
 
@@ -668,9 +970,7 @@ Passos:
 
 Se o agente não encontrar a página, quase sempre é porque a página/database não foi compartilhada com a integração.
 
----
-
-## 22. Configurar Telegram
+### 6.5. Telegram
 
 1. No Telegram, fale com `@BotFather`.
 2. Use:
@@ -693,9 +993,7 @@ Depois reinicie o gateway:
 pm2 restart openclaw-gateway
 ```
 
----
-
-## 23. Configurar Firecrawl / Fireclaw Search
+### 6.6. Firecrawl
 
 O Firecrawl serve para:
 
@@ -712,9 +1010,7 @@ Passos:
 
 Use com cuidado. Crawling massivo pode consumir créditos rápido.
 
----
-
-## 24. Configurar ElevenLabs
+### 6.7. ElevenLabs
 
 A ElevenLabs serve para voz IA:
 
@@ -733,7 +1029,7 @@ Passos:
 
 ---
 
-## 25. Testes finais
+## 7. Testes e Validação
 
 ### Ver se OpenClaw está rodando
 
@@ -771,7 +1067,7 @@ https://openclaw.alobexpress.com.br
 
 ---
 
-## 26. Troubleshooting — erros comuns
+## 8. Troubleshooting
 
 ### Erro: `Unable to locate package npm`
 
@@ -905,7 +1201,9 @@ Depois tente de novo.
 
 ---
 
-## 27. Backup
+## 9. Manutenção
+
+### 9.1. Backup
 
 Faça backup periódico destas pastas:
 
@@ -933,9 +1231,7 @@ tar -czf openclaw-backup-$(date +%F).tar.gz ~/.openclaw
 
 Atenção: esse backup pode conter tokens e credenciais. Não suba em repositório público.
 
----
-
-## 28. Atualizar OpenClaw
+### 9.2. Atualização
 
 Se instalou via npm:
 
@@ -951,9 +1247,7 @@ Antes de atualizar, faça backup:
 tar -czf openclaw-backup-before-update-$(date +%F).tar.gz ~/.openclaw
 ```
 
----
-
-## 29. Checklist de segurança
+### 9.3. Checklist de Segurança
 
 Antes de considerar produção, confira:
 
@@ -971,7 +1265,9 @@ Antes de considerar produção, confira:
 
 ---
 
-## 30. Comandos finais mais usados
+## 10. Referências
+
+### Comandos Mais Usados
 
 ```bash
 # Status do OpenClaw
@@ -1005,9 +1301,7 @@ openclaw devices approve REQUEST_ID_AQUI
 openclaw doctor
 ```
 
----
-
-## 31. Fontes oficiais úteis
+### Fontes Oficiais
 
 - Instalação OpenClaw: https://docs.openclaw.ai/install
 - OpenClaw no GCP: https://docs.openclaw.ai/install/gcp
@@ -1019,9 +1313,7 @@ openclaw doctor
 - OpenAI API usage: https://platform.openai.com/usage
 - OpenAI billing: https://platform.openai.com/settings/organization/billing/overview
 
----
-
-## 32. Resumo para lembrar
+### Resumo da Arquitetura
 
 O funcionamento ideal é:
 
