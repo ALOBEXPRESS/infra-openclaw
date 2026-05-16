@@ -99,41 +99,41 @@ Seguindo este guia, você implantará uma instância OpenClaw pronta para produ�
 
 ---
 
-## 📋 Prerequisites
+## 📋 Pré-requisitos
 
-### Common Requirements (Both Methods)
+### Requisitos Comuns (Ambos os Métodos)
 
-- [ ] **Google Cloud Account** with Compute Engine enabled
-- [ ] **Domain or subdomain** (e.g., `openclaw.alobexpress.com.br`)
-- [ ] **OpenAI API Key** for AI model access
-- [ ] **SSH access** to your local terminal
+- [ ] **Conta Google Cloud** com Compute Engine habilitado
+- [ ] **Domínio ou subdomínio** (ex: `openclaw.alobexpress.com.br`)
+- [ ] **Chave API OpenAI** para acesso aos modelos de IA
+- [ ] **Acesso SSH** ao seu terminal local
 
-### Method 1: Traditional VM Requirements
+### Requisitos do Método 1: VM Tradicional
 
-- [ ] **Cloudflare Account** managing your domain's DNS
-- [ ] Basic Linux command line knowledge
+- [ ] **Conta Cloudflare** gerenciando o DNS do seu domínio
+- [ ] Conhecimento básico de linha de comando Linux
 
-### Method 2: Docker Swarm Requirements
+### Requisitos do Método 2: Docker Swarm
 
-- [ ] **Docker Engine** 24.x or higher
-- [ ] **Docker Swarm** initialized
-- [ ] **Traefik** reverse proxy configured
-- [ ] **Portainer** (optional, for visual management)
-- [ ] External network `network_swarm_public` created
+- [ ] **Docker Engine** 24.x ou superior
+- [ ] **Docker Swarm** inicializado
+- [ ] **Traefik** reverse proxy configurado
+- [ ] **Portainer** (opcional, para gerenciamento visual)
+- [ ] Rede externa `network_swarm_public` criada
 
-### Optional (for extended features)
+### Opcional (para recursos estendidos)
 
-- [ ] Google Places API key (for location-based searches)
-- [ ] Notion API integration token (for database operations)
-- [ ] Telegram Bot Token (for chat integrations)
-- [ ] Firecrawl API key (for web scraping)
-- [ ] ElevenLabs API key (for voice synthesis)
+- [ ] Chave API Google Places (para buscas baseadas em localização)
+- [ ] Token de integração Notion (para operações de banco de dados)
+- [ ] Token de Bot Telegram (para integrações de chat)
+- [ ] Chave API Firecrawl (para web scraping)
+- [ ] Chave API ElevenLabs (para síntese de voz)
 
 ---
 
-## 🏗 Architecture Overview
+## 🏗 Visão Geral da Arquitetura
 
-### System Architecture
+### Arquitetura do Sistema
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -186,16 +186,16 @@ Seguindo este guia, você implantará uma instância OpenClaw pronta para produ�
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Why This Architecture?
+### Por Que Esta Arquitetura?
 
-| Benefit | Explanation |
+| Benefício | Explicação |
 |---------|-------------|
-| **Security** | Port 18789 never exposed publicly; all traffic through Cloudflare + Caddy |
-| **Reliability** | PM2 ensures gateway restarts automatically on crashes |
-| **Performance** | Cloudflare CDN caches static assets globally |
-| **Scalability** | Easy to upgrade VM size as usage grows |
-| **Maintainability** | Separate concerns: Cloudflare (edge), Caddy (proxy), OpenClaw (app) |
-| **SSL/TLS** | Automatic certificate management via Caddy |
+| **Segurança** | Porta 18789 nunca exposta publicamente; todo tráfego através de Cloudflare + Caddy |
+| **Confiabilidade** | PM2 garante que o gateway reinicie automaticamente em caso de falhas |
+| **Performance** | CDN Cloudflare faz cache de assets estáticos globalmente |
+| **Escalabilidade** | Fácil atualizar o tamanho da VM conforme o uso cresce |
+| **Manutenibilidade** | Separação de responsabilidades: Cloudflare (edge), Caddy (proxy), OpenClaw (app) |
+| **SSL/TLS** | Gerenciamento automático de certificados via Caddy |
 
 ---
 
@@ -263,53 +263,53 @@ gcloud compute instances start openclaw-alobexpress --zone=us-central1-c
 
 ---
 
-## 🚀 Deployment Methods
+## 🚀 Métodos de Implantação
 
-Choose the deployment method that best fits your needs:
+Escolha o método de implantação que melhor se adequa às suas necessidades:
 
-### Quick Comparison
+### Comparação Rápida
 
-| Aspect | Traditional VM + PM2 | Docker Swarm + Traefik |
+| Aspecto | VM Tradicional + PM2 | Docker Swarm + Traefik |
 |--------|---------------------|------------------------|
-| **Setup Time** | 30-45 minutes | 15-20 minutes (if Swarm ready) |
-| **Complexity** | Low | Medium |
-| **Best For** | Beginners, small teams, learning | Production, DevOps teams, scaling |
-| **Scalability** | Manual (upgrade VM) | Automatic (add nodes) |
-| **Management** | Command line (SSH) | Portainer UI + CLI |
-| **Updates** | `npm install -g openclaw@latest` | `docker service update --image` |
-| **Rollback** | Manual backup restore | Built-in (`docker service rollback`) |
-| **Resource Usage** | Lower overhead | Slightly higher (Docker layer) |
-| **Monitoring** | PM2 monit | Docker stats + Portainer |
-| **Multi-instance** | Requires manual setup | Native support |
-| **SSL Management** | Caddy (automatic) | Traefik (automatic) |
-| **Cost** | VM only | VM + potential orchestration overhead |
+| **Tempo de Configuração** | 30-45 minutos | 15-20 minutos (se Swarm pronto) |
+| **Complexidade** | Baixa | Média |
+| **Melhor Para** | Iniciantes, pequenas equipes, aprendizado | Produção, equipes DevOps, escalabilidade |
+| **Escalabilidade** | Manual (upgrade de VM) | Automática (adicionar nós) |
+| **Gerenciamento** | Linha de comando (SSH) | Interface Portainer + CLI |
+| **Atualizações** | `npm install -g openclaw@latest` | `docker service update --image` |
+| **Rollback** | Restauração manual de backup | Integrado (`docker service rollback`) |
+| **Uso de Recursos** | Menor overhead | Ligeiramente maior (camada Docker) |
+| **Monitoramento** | PM2 monit | Docker stats + Portainer |
+| **Multi-instância** | Requer configuração manual | Suporte nativo |
+| **Gerenciamento SSL** | Caddy (automático) | Traefik (automático) |
+| **Custo** | Apenas VM | VM + potencial overhead de orquestração |
 
-### Decision Guide
+### Guia de Decisão
 
-**Choose Traditional VM + PM2 if:**
-- ✅ You're new to OpenClaw or Docker
-- ✅ You want simple, straightforward setup
-- ✅ You're running a single instance
-- ✅ You prefer direct file system access
-- ✅ You want lower resource overhead
+**Escolha VM Tradicional + PM2 se:**
+- ✅ Você é novo no OpenClaw ou Docker
+- ✅ Você quer configuração simples e direta
+- ✅ Você está executando uma única instância
+- ✅ Você prefere acesso direto ao sistema de arquivos
+- ✅ Você quer menor overhead de recursos
 
-**Choose Docker Swarm + Traefik if:**
-- ✅ You already have Docker infrastructure
-- ✅ You need easy scaling and high availability
-- ✅ You want visual management (Portainer)
-- ✅ You're comfortable with containers
-- ✅ You need quick rollbacks and updates
-- ✅ You're running multiple services with Traefik
+**Escolha Docker Swarm + Traefik se:**
+- ✅ Você já tem infraestrutura Docker
+- ✅ Você precisa de escalabilidade fácil e alta disponibilidade
+- ✅ Você quer gerenciamento visual (Portainer)
+- ✅ Você está confortável com contêineres
+- ✅ Você precisa de rollbacks e atualizações rápidas
+- ✅ Você está executando múltiplos serviços com Traefik
 
 ---
 
-## Method 1: Traditional VM with PM2 (Recommended for Beginners)
+## Método 1: VM Tradicional com PM2 (Recomendado para Iniciantes)
 
-This method uses a traditional VM setup with PM2 for process management and Caddy for reverse proxy.
+Este método usa uma configuração tradicional de VM com PM2 para gerenciamento de processos e Caddy para proxy reverso.
 
-### 1. Infrastructure Setup
+### 1. Configuração da Infraestrutura
 
-#### Step 1.1: Create Google Cloud VM
+#### Passo 1.1: Criar VM no Google Cloud
 
 1. Navigate to [Google Cloud Console](https://console.cloud.google.com/)
 2. Go to **Compute Engine** → **VM instances**
@@ -331,22 +331,22 @@ Boot disk: Ubuntu 22.04 LTS, 50 GB SSD
 
 5. Click **Create**
 
-**Firewall Rules:**
+**Regras de Firewall:**
 
-Ensure these ports are open in your VPC firewall:
+Certifique-se de que estas portas estão abertas no firewall da sua VPC:
 
-| Port | Protocol | Purpose | Public? |
+| Porta | Protocolo | Propósito | Público? |
 |------|----------|---------|---------|
-| 22 | TCP | SSH access | Yes (restricted to your IP recommended) |
-| 80 | TCP | HTTP (redirects to HTTPS) | Yes |
-| 443 | TCP | HTTPS | Yes |
-| 18789 | TCP | OpenClaw Gateway | **NO** (internal only) |
+| 22 | TCP | Acesso SSH | Sim (restrito ao seu IP recomendado) |
+| 80 | TCP | HTTP (redireciona para HTTPS) | Sim |
+| 443 | TCP | HTTPS | Sim |
+| 18789 | TCP | OpenClaw Gateway | **NÃO** (apenas interno) |
 
-**Security Note**: Never expose port 18789 publicly. It should only be accessible via `127.0.0.1` (localhost).
+**Nota de Segurança**: Nunca exponha a porta 18789 publicamente. Ela deve ser acessível apenas via `127.0.0.1` (localhost).
 
-#### Step 1.2: Reserve Static IP
+#### Passo 1.2: Reservar IP Estático
 
-A static IP prevents your DNS from breaking when the VM restarts.
+Um IP estático evita que seu DNS quebre quando a VM reiniciar.
 
 **Via Console:**
 1. Go to **VPC Network** → **IP addresses**
@@ -372,20 +372,20 @@ gcloud compute instances add-access-config openclaw-alobexpress \
   --zone=us-central1-c
 ```
 
-**Get your static IP:**
+**Obtenha seu IP estático:**
 ```bash
 gcloud compute addresses describe openclaw-static-ip \
   --region=us-central1 \
   --format="get(address)"
 ```
 
-#### Step 1.3: Configure Cloudflare DNS
+#### Passo 1.3: Configurar DNS no Cloudflare
 
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. Select your domain (e.g., `alobexpress.com.br`)
 3. Go to **DNS** → **Records**
 
-**Add DNS Records:**
+**Adicionar Registros DNS:**
 
 | Type | Name | Content | Proxy Status | TTL |
 |------|------|---------|--------------|-----|
@@ -398,22 +398,22 @@ A     advanced    34.123.45.67    Proxied    Auto
 CNAME openclaw    advanced.alobexpress.com.br    Proxied    Auto
 ```
 
-**Proxy Status**: The orange cloud (🟠 Proxied) means traffic routes through Cloudflare's CDN.
+**Status do Proxy**: A nuvem laranja (🟠 Proxied) significa que o tráfego passa pela CDN da Cloudflare.
 
-**SSL/TLS Configuration:**
+**Configuração SSL/TLS:**
 
 1. Go to **SSL/TLS** → **Overview**
 2. Set encryption mode to **Full**
    - ❌ Not `Flexible` (insecure)
    - ✅ Use `Full` or `Full (strict)`
 
-**Why Full?**
-- `Flexible`: Cloudflare ↔ User is HTTPS, but Cloudflare ↔ Server is HTTP (insecure)
-- `Full`: HTTPS end-to-end (Caddy handles SSL on server side)
+**Por que Full?**
+- `Flexible`: Cloudflare ↔ Usuário é HTTPS, mas Cloudflare ↔ Servidor é HTTP (inseguro)
+- `Full`: HTTPS ponta a ponta (Caddy gerencia SSL no lado do servidor)
 
-**DNS Propagation:**
+**Propagação DNS:**
 
-After adding records, wait 5-10 minutes for DNS propagation. Verify with:
+Após adicionar os registros, aguarde 5-10 minutos para propagação do DNS. Verifique com:
 
 ```bash
 # Check DNS resolution
@@ -423,15 +423,15 @@ nslookup openclaw.alobexpress.com.br
 dig openclaw.alobexpress.com.br
 ```
 
-**Note**: With Cloudflare proxy enabled, DNS tools will show Cloudflare IPs, not your VM IP. This is expected.
+**Nota**: Com o proxy Cloudflare habilitado, ferramentas DNS mostrarão IPs da Cloudflare, não o IP da sua VM. Isso é esperado.
 
 ---
 
-### 2. OpenClaw Installation
+### 2. Instalação do OpenClaw
 
-#### Step 2.1: Access Your VM
+#### Passo 2.1: Acessar Sua VM
 
-**Via Google Cloud Console:**
+**Via Console do Google Cloud:**
 1. Go to **Compute Engine** → **VM instances**
 2. Click **SSH** next to `openclaw-alobexpress`
 
@@ -450,9 +450,9 @@ gcloud compute ssh openclaw-alobexpress --zone=us-central1-c
 ssh -i ~/.ssh/google_compute_engine USERNAME@YOUR_VM_IP
 ```
 
-#### Step 2.2: Prepare the Environment
+#### Passo 2.2: Preparar o Ambiente
 
-Update system packages and install dependencies:
+Atualize os pacotes do sistema e instale dependências:
 
 ```bash
 # Update package lists
@@ -473,17 +473,17 @@ sudo apt install -y \
   htop
 ```
 
-**What each package does:**
-- `curl`: Download files and make HTTP requests
-- `ca-certificates`: SSL certificate validation
-- `gnupg`: GPG key management
-- `git`: Version control (useful for future updates)
-- `build-essential`: Compilers for native Node.js modules
-- `unzip`: Extract compressed files
-- `nano`: Text editor
-- `htop`: Process monitoring
+**O que cada pacote faz:**
+- `curl`: Baixar arquivos e fazer requisições HTTP
+- `ca-certificates`: Validação de certificados SSL
+- `gnupg`: Gerenciamento de chaves GPG
+- `git`: Controle de versão (útil para atualizações futuras)
+- `build-essential`: Compiladores para módulos nativos do Node.js
+- `unzip`: Extrair arquivos compactados
+- `nano`: Editor de texto
+- `htop`: Monitoramento de processos
 
-#### Step 2.3: Install Node.js
+#### Passo 2.3: Instalar Node.js
 
 OpenClaw requires Node.js 22.14+ or 24.x.
 
@@ -522,27 +522,27 @@ nvm use 24
 nvm alias default 24
 ```
 
-#### Step 2.4: Install OpenClaw
+#### Passo 2.4: Instalar OpenClaw
 
-**Method 1: Official Installer (recommended)**
+**Método 1: Instalador Oficial (recomendado)**
 
 ```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
-This script:
-- Detects your OS and architecture
-- Installs OpenClaw globally
-- Sets up initial configuration
-- Adds OpenClaw to your PATH
+Este script:
+- Detecta seu SO e arquitetura
+- Instala OpenClaw globalmente
+- Configura a configuração inicial
+- Adiciona OpenClaw ao seu PATH
 
-**Method 2: npm Global Install**
+**Método 2: Instalação Global via npm**
 
 ```bash
 sudo npm install -g openclaw@latest
 ```
 
-**Verify Installation:**
+**Verificar Instalação:**
 
 ```bash
 # Check version
@@ -561,40 +561,40 @@ openclaw doctor
 ✓ Gateway: Not running
 ```
 
-#### Step 2.5: Initial Setup
+#### Passo 2.5: Configuração Inicial
 
-Run the setup wizard:
+Execute o assistente de configuração:
 
 ```bash
 openclaw setup --wizard
 ```
 
-**Or use the interactive configure command:**
+**Ou use o comando de configuração interativo:**
 
 ```bash
 openclaw configure
 ```
 
-**Configuration Prompts:**
+**Prompts de Configuração:**
 
-| Prompt | Recommended Value | Notes |
+| Prompt | Valor Recomendado | Notas |
 |--------|-------------------|-------|
-| **Gateway Mode** | Local | For single-server deployment |
-| **AI Provider** | OpenAI | Or Claude, Gemini, etc. |
-| **Model** | gpt-4o-mini | Cost-effective for testing |
-| **Channels** | Telegram | Add others as needed |
-| **Plugins** | Default | Customize later |
+| **Modo Gateway** | Local | Para implantação em servidor único |
+| **Provedor IA** | OpenAI | Ou Claude, Gemini, etc. |
+| **Modelo** | gpt-4o-mini | Custo-efetivo para testes |
+| **Canais** | Telegram | Adicione outros conforme necessário |
+| **Plugins** | Padrão | Personalize depois |
 
-**Configuration File Location:**
+**Localização do Arquivo de Configuração:**
 
 ```text
 ~/.openclaw/openclaw.json          # If running as regular user
 /root/.openclaw/openclaw.json      # If running as root
 ```
 
-**Important**: Always use the same user for setup and running OpenClaw. Mixing users causes permission issues.
+**Importante**: Sempre use o mesmo usuário para configuração e execução do OpenClaw. Misturar usuários causa problemas de permissão.
 
-**View Configuration:**
+**Visualizar Configuração:**
 
 ```bash
 cat ~/.openclaw/openclaw.json
@@ -602,25 +602,25 @@ cat ~/.openclaw/openclaw.json
 
 ---
 
-### 3. Gateway Configuration
+### 3. Configuração do Gateway
 
-#### Step 3.1: Configure Gateway Token
+#### Passo 3.1: Configurar Token do Gateway
 
-The gateway token authenticates dashboard access.
+O token do gateway autentica o acesso ao dashboard.
 
-**Open configuration file:**
+**Abrir arquivo de configuração:**
 
 ```bash
 nano ~/.openclaw/openclaw.json
 ```
 
-**Or if running as root:**
+**Ou se executando como root:**
 
 ```bash
 sudo nano /root/.openclaw/openclaw.json
 ```
 
-**Find the gateway section:**
+**Encontre a seção gateway:**
 
 ```json
 {
@@ -638,17 +638,17 @@ sudo nano /root/.openclaw/openclaw.json
 - Never share this token publicly
 - Regenerate if compromised: `openclaw gateway --reset-token`
 
-#### Step 3.2: Allow Public Domain Access
+#### Passo 3.2: Permitir Acesso de Domínio Público
 
-By default, OpenClaw blocks requests from unknown origins. Configure allowed domains:
+Por padrão, OpenClaw bloqueia requisições de origens desconhecidas. Configure domínios permitidos:
 
-**Edit configuration:**
+**Editar configuração:**
 
 ```bash
 nano ~/.openclaw/openclaw.json
 ```
 
-**Add `controlUi` section:**
+**Adicionar seção `controlUi`:**
 
 ```json
 {
@@ -666,14 +666,14 @@ nano ~/.openclaw/openclaw.json
 }
 ```
 
-**Configuration Options:**
+**Opções de Configuração:**
 
-| Option | Type | Purpose |
+| Opção | Tipo | Propósito |
 |--------|------|---------|
-| `allowInsecureAuth` | boolean | Allow token-based auth (set `true` for production with HTTPS) |
-| `allowedOrigins` | array | Whitelist of domains that can access the gateway |
+| `allowInsecureAuth` | boolean | Permitir autenticação baseada em token (defina `true` para produção com HTTPS) |
+| `allowedOrigins` | array | Lista de domínios permitidos que podem acessar o gateway |
 
-**Multiple Domains:**
+**Múltiplos Domínios:**
 
 ```json
 "allowedOrigins": [
@@ -683,7 +683,7 @@ nano ~/.openclaw/openclaw.json
 ]
 ```
 
-**Validate JSON Syntax:**
+**Validar Sintaxe JSON:**
 
 ```bash
 # Check for syntax errors
@@ -696,17 +696,17 @@ node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.openclaw/op
 node -e "JSON.parse(require('fs').readFileSync('/root/.openclaw/openclaw.json','utf8')); console.log('✓ JSON is valid')"
 ```
 
-**Common JSON Errors:**
-- Missing comma between properties
-- Trailing comma after last property
-- Unmatched braces `{}`
-- Unmatched brackets `[]`
+**Erros JSON Comuns:**
+- Vírgula faltando entre propriedades
+- Vírgula sobrando após última propriedade
+- Chaves `{}` não correspondentes
+- Colchetes `[]` não correspondentes
 
-#### Step 3.3: Install and Configure Caddy
+#### Passo 3.3: Instalar e Configurar Caddy
 
-Caddy is a modern web server with automatic HTTPS.
+Caddy é um servidor web moderno com HTTPS automático.
 
-**Install Caddy:**
+**Instalar Caddy:**
 
 ```bash
 # Update package list
@@ -719,13 +719,13 @@ sudo apt install -y caddy
 caddy version
 ```
 
-**Configure Caddyfile:**
+**Configurar Caddyfile:**
 
 ```bash
 sudo nano /etc/caddy/Caddyfile
 ```
 
-**Add this configuration:**
+**Adicionar esta configuração:**
 
 ```caddy
 openclaw.alobexpress.com.br {
@@ -733,13 +733,13 @@ openclaw.alobexpress.com.br {
 }
 ```
 
-**What this does:**
-- Listens on ports 80 and 443
-- Automatically obtains SSL certificate from Let's Encrypt
-- Proxies all requests to OpenClaw gateway on localhost:18789
-- Handles HTTP → HTTPS redirects
+**O que isso faz:**
+- Escuta nas portas 80 e 443
+- Obtém automaticamente certificado SSL do Let's Encrypt
+- Faz proxy de todas as requisições para o gateway OpenClaw em localhost:18789
+- Gerencia redirecionamentos HTTP → HTTPS
 
-**Advanced Caddyfile (with logging and headers):**
+**Caddyfile Avançado (com logging e headers):**
 
 ```caddy
 openclaw.alobexpress.com.br {
@@ -758,7 +758,7 @@ openclaw.alobexpress.com.br {
 }
 ```
 
-**Restart Caddy:**
+**Reiniciar Caddy:**
 
 ```bash
 # Restart to apply changes
@@ -778,15 +778,15 @@ sudo systemctl enable caddy
      Active: active (running) since...
 ```
 
-**View Caddy logs:**
+**Visualizar logs do Caddy:**
 
 ```bash
 sudo journalctl -u caddy -f
 ```
 
-#### Step 3.4: Test the Gateway
+#### Passo 3.4: Testar o Gateway
 
-Start OpenClaw gateway manually to verify configuration:
+Inicie o gateway OpenClaw manualmente para verificar a configuração:
 
 ```bash
 openclaw gateway --allow-unconfigured
@@ -801,43 +801,43 @@ openclaw gateway --allow-unconfigured
 [INFO] Heartbeat started
 ```
 
-**Test local access:**
+**Testar acesso local:**
 
 ```bash
 # In another terminal
 curl http://127.0.0.1:18789/health
 ```
 
-**Test public access:**
+**Testar acesso público:**
 
-Open your browser and navigate to:
+Abra seu navegador e navegue para:
 
 ```text
 https://openclaw.alobexpress.com.br
 ```
 
-**You should see:**
-- OpenClaw dashboard login screen
-- Prompt for gateway token
+**Você deve ver:**
+- Tela de login do dashboard OpenClaw
+- Prompt para token do gateway
 
-**Enter the token from `~/.openclaw/openclaw.json`**
+**Digite o token de `~/.openclaw/openclaw.json`**
 
-**Stop the manual gateway:**
+**Parar o gateway manual:**
 
-Press `Ctrl+C` in the terminal running `openclaw gateway`
+Pressione `Ctrl+C` no terminal executando `openclaw gateway`
 
-#### Step 3.5: Device Pairing
+#### Passo 3.5: Pareamento de Dispositivos
 
-OpenClaw uses device pairing for security.
+OpenClaw usa pareamento de dispositivos para segurança.
 
-**On first dashboard access, you'll see:**
+**No primeiro acesso ao dashboard, você verá:**
 
 ```text
 Device pairing required
 Request ID: 1e0ea8bf-2b7d-41ac-aca4-42e64f78ec70
 ```
 
-**In your VM terminal, approve the device:**
+**No terminal da sua VM, aprove o dispositivo:**
 
 ```bash
 # List pending requests
@@ -852,13 +852,13 @@ openclaw devices approve 1e0ea8bf-2b7d-41ac-aca4-42e64f78ec70
 ✓ Device approved successfully
 ```
 
-**Important Notes:**
-- Request IDs expire after 5 minutes
-- If expired, refresh the dashboard to generate a new request
-- Approve immediately after seeing the request ID
-- Each browser/device needs separate approval
+**Notas Importantes:**
+- IDs de requisição expiram após 5 minutos
+- Se expirado, atualize o dashboard para gerar uma nova requisição
+- Aprove imediatamente após ver o ID da requisição
+- Cada navegador/dispositivo precisa de aprovação separada
 
-**Manage devices:**
+**Gerenciar dispositivos:**
 
 ```bash
 # List all approved devices
@@ -873,17 +873,17 @@ openclaw devices clear
 
 ---
 
-### 4. Process Management with PM2
+### 4. Gerenciamento de Processos com PM2
 
-PM2 keeps OpenClaw running 24/7 with automatic restarts.
+PM2 mantém o OpenClaw rodando 24/7 com reinicializações automáticas.
 
-#### Step 4.1: Install PM2
+#### Passo 4.1: Instalar PM2
 
 ```bash
 sudo npm install -g pm2
 ```
 
-#### Step 4.2: Start OpenClaw with PM2
+#### Passo 4.2: Iniciar OpenClaw com PM2
 
 ```bash
 pm2 start "openclaw gateway --allow-unconfigured" --name openclaw-gateway
@@ -900,7 +900,7 @@ pm2 start "openclaw gateway --allow-unconfigured" --name openclaw-gateway
 └─────┴──────────────────┴─────────┴─────────┴──────────┴────────┘
 ```
 
-#### Step 4.3: Save PM2 Configuration
+#### Passo 4.3: Salvar Configuração do PM2
 
 ```bash
 # Save current process list
@@ -910,30 +910,30 @@ pm2 save
 pm2 startup
 ```
 
-**PM2 will output a command like:**
+**PM2 irá gerar um comando como:**
 
 ```bash
 sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u username --hp /home/username
 ```
 
-**Copy and run that exact command.**
+**Copie e execute esse comando exato.**
 
-This ensures OpenClaw starts automatically after server reboots.
+Isso garante que o OpenClaw inicie automaticamente após reinicializações do servidor.
 
-#### Step 4.4: PM2 Commands Reference
+#### Passo 4.4: Referência de Comandos PM2
 
-| Command | Purpose |
+| Comando | Propósito |
 |---------|---------|
-| `pm2 status` | Show all processes |
-| `pm2 logs openclaw-gateway` | View real-time logs |
-| `pm2 logs openclaw-gateway --lines 100` | View last 100 log lines |
-| `pm2 restart openclaw-gateway` | Restart the gateway |
-| `pm2 stop openclaw-gateway` | Stop the gateway |
-| `pm2 delete openclaw-gateway` | Remove from PM2 |
-| `pm2 monit` | Real-time monitoring dashboard |
-| `pm2 flush` | Clear all logs |
+| `pm2 status` | Mostrar todos os processos |
+| `pm2 logs openclaw-gateway` | Ver logs em tempo real |
+| `pm2 logs openclaw-gateway --lines 100` | Ver últimas 100 linhas de log |
+| `pm2 restart openclaw-gateway` | Reiniciar o gateway |
+| `pm2 stop openclaw-gateway` | Parar o gateway |
+| `pm2 delete openclaw-gateway` | Remover do PM2 |
+| `pm2 monit` | Dashboard de monitoramento em tempo real |
+| `pm2 flush` | Limpar todos os logs |
 
-**After configuration changes:**
+**Após mudanças de configuração:**
 
 ```bash
 # Restart to apply new config
@@ -945,22 +945,22 @@ pm2 logs openclaw-gateway --lines 50
 
 ---
 
-## Method 2: Docker Swarm with Traefik (Recommended for Production)
+## Método 2: Docker Swarm com Traefik (Recomendado para Produção)
 
-This method uses Docker Swarm for orchestration and Traefik for automatic SSL and routing.
+Este método usa Docker Swarm para orquestração e Traefik para SSL automático e roteamento.
 
-### Prerequisites for Docker Method
+### Pré-requisitos para o Método Docker
 
-Ensure you have:
+Certifique-se de ter:
 
-| Requirement | Minimum Version |
+| Requisito | Versão Mínima |
 |-------------|-----------------|
 | Docker Engine | 24.x |
 | Docker Compose / Swarm | v2.x |
-| Traefik (reverse proxy) | v2.x or v3.x |
-| Portainer (optional) | Latest |
+| Traefik (reverse proxy) | v2.x ou v3.x |
+| Portainer (opcional) | Mais recente |
 
-**Before starting:**
+**Antes de começar:**
 
 ```bash
 # Initialize Docker Swarm (if not already done)
@@ -973,7 +973,7 @@ docker network create --driver overlay --attachable network_swarm_public
 docker service ls | grep traefik
 ```
 
-### Step 1: Prepare Data Directory
+### Passo 1: Preparar Diretório de Dados
 
 ```bash
 # Create directory for OpenClaw data
@@ -983,11 +983,11 @@ mkdir -p /opt/infra/alobexpress/openclaw
 chown -R 1000:1000 /opt/infra/alobexpress/openclaw
 ```
 
-**Why uid 1000?** The official OpenClaw Docker image runs as the `node` user (uid 1000). Without correct permissions, the container cannot write configuration files.
+**Por que uid 1000?** A imagem Docker oficial do OpenClaw executa como usuário `node` (uid 1000). Sem as permissões corretas, o contêiner não pode escrever arquivos de configuração.
 
-### Step 2: Create docker-compose.yml
+### Passo 2: Criar docker-compose.yml
 
-Create `/opt/infra/alobexpress/docker-compose.yml`:
+Crie `/opt/infra/alobexpress/docker-compose.yml`:
 
 ```yaml
 version: "3.7"
@@ -1564,30 +1564,30 @@ https://openclaw.alobexpress.com.br
 
 ## 🔧 Troubleshooting
 
-This section covers common issues for both deployment methods.
+Esta seção cobre problemas comuns para ambos os métodos de implantação.
 
-### Common Issues (Both Methods)
+### Problemas Comuns (Ambos os Métodos)
 
-#### ❌ `origin not allowed` on WebSocket
+#### ❌ `origin not allowed` no WebSocket
 
-**Cause:** Gateway blocks connections from unknown origins.
+**Causa:** Gateway bloqueia conexões de origens desconhecidas.
 
-**Solution for PM2:**
+**Solução para PM2:**
 ```bash
 nano ~/.openclaw/openclaw.json
 ```
 
-Add to `gateway.controlUi`:
+Adicione em `gateway.controlUi`:
 ```json
 "allowedOrigins": ["https://openclaw.seudominio.com.br"]
 ```
 
-Restart:
+Reinicie:
 ```bash
 pm2 restart openclaw-gateway
 ```
 
-**Solution for Docker:**
+**Solução para Docker:**
 ```bash
 openclaw config set \
   --batch-json '[{"path":"gateway.controlUi.allowedOrigins","value":["https://openclaw.seudominio.com.br"]}]'
@@ -1599,71 +1599,71 @@ docker service update --force openclaw_openclaw_gateway
 
 #### ❌ `No API key found for provider "openai"`
 
-**Cause:** OpenAI API key not configured.
+**Causa:** Chave API OpenAI não configurada.
 
-**Solution for PM2:**
+**Solução para PM2:**
 ```bash
 openclaw configure
-# Or
+# Ou
 export OPENAI_API_KEY="sk-..."
 ```
 
-**Solution for Docker:**
+**Solução para Docker:**
 ```bash
-# Check if env var is set
+# Verificar se variável de ambiente está definida
 docker exec -it $(docker ps --filter name=openclaw -q) printenv OPENAI_API_KEY
 
-# If empty, set in config
+# Se vazio, definir na configuração
 openclaw config set agents.main.auth.openai.apiKey sk-...
 
-# Or update Portainer environment variables and redeploy
+# Ou atualizar variáveis de ambiente no Portainer e reimplantar
 ```
 
 ---
 
 #### ❌ `device pairing required (requestId: ...)`
 
-**Cause:** New browser/device needs approval.
+**Causa:** Novo navegador/dispositivo precisa de aprovação.
 
-**Solution (Both Methods):**
+**Solução (Ambos os Métodos):**
 ```bash
-# List pending requests
+# Listar requisições pendentes
 openclaw devices list
 
-# Approve device
+# Aprovar dispositivo
 openclaw devices approve REQUEST_ID_HERE
 ```
 
-**Note:** Request IDs expire after 5 minutes. If expired, refresh the dashboard to generate a new one.
+**Nota:** IDs de requisição expiram após 5 minutos. Se expirado, atualize o dashboard para gerar um novo.
 
 ---
 
 #### ❌ `gateway.mode is unset; gateway start will be blocked`
 
-**Cause:** Gateway mode not configured.
+**Causa:** Modo do gateway não configurado.
 
-**Solution (Both Methods):**
+**Solução (Ambos os Métodos):**
 ```bash
 openclaw config set gateway.mode local
 ```
 
-Then restart the service.
+Depois reinicie o serviço.
 
 ---
 
-### Method 1 Specific Issues (PM2)
+### Problemas Específicos do Método 1 (PM2)
 
 #### ❌ `Unable to locate package npm`
 
-**Cause:** Node.js not installed or outdated repository.
+**Causa:** Node.js não instalado ou repositório desatualizado.
 
-**Solution:**
+**Solução:**
 ```bash
-# Install via NodeSource
+# Instalar via NodeSource
 curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Verify
+# Verificar
 node -v
 npm -v
 ```
@@ -1672,20 +1672,20 @@ npm -v
 
 #### ❌ `HTTP ERROR 502`
 
-**Cause:** Caddy is running but OpenClaw gateway is not responding.
+**Causa:** Caddy está rodando mas o gateway OpenClaw não está respondendo.
 
-**Solution:**
+**Solução:**
 ```bash
-# Check PM2 status
+# Verificar status do PM2
 pm2 status
 
-# View logs
+# Ver logs
 pm2 logs openclaw-gateway
 
-# Check if port is listening
+# Verificar se a porta está escutando
 ss -lntp | grep 18789
 
-# Restart if needed
+# Reiniciar se necessário
 pm2 restart openclaw-gateway
 ```
 
@@ -1693,34 +1693,34 @@ pm2 restart openclaw-gateway
 
 #### ❌ `gateway token missing`
 
-**Cause:** Token not entered in dashboard.
+**Causa:** Token não inserido no dashboard.
 
-**Solution:**
+**Solução:**
 ```bash
-# View token
+# Ver token
 cat ~/.openclaw/openclaw.json | grep token
 
-# Or
+# Ou
 openclaw config get gateway.auth.token
 ```
 
-Enter this token in the dashboard "Token do Gateway" field.
+Digite este token no campo "Token do Gateway" do dashboard.
 
 ---
 
 #### ❌ JSON inválido
 
-**Cause:** Manual edit introduced syntax errors.
+**Causa:** Edição manual introduziu erros de sintaxe.
 
-**Solution:**
+**Solução:**
 ```bash
-# Validate JSON
+# Validar JSON
 node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.openclaw/openclaw.json','utf8')); console.log('✓ JSON is valid')"
 
-# If invalid, restore backup
+# Se inválido, restaurar backup
 cp ~/.openclaw/openclaw.json.bak ~/.openclaw/openclaw.json
 
-# Restart
+# Reiniciar
 pm2 restart openclaw-gateway
 ```
 
@@ -1728,14 +1728,14 @@ pm2 restart openclaw-gateway
 
 #### ❌ gcloud: `project is not currently set`
 
-**Cause:** Google Cloud project not configured.
+**Causa:** Projeto do Google Cloud não configurado.
 
-**Solution:**
+**Solução:**
 ```bash
-# List projects
+# Listar projetos
 gcloud projects list
 
-# Set project
+# Definir projeto
 gcloud config set project YOUR_PROJECT_ID
 ```
 
@@ -1743,9 +1743,9 @@ gcloud config set project YOUR_PROJECT_ID
 
 #### ❌ gcloud: `insufficient authentication scopes`
 
-**Cause:** Authentication expired or insufficient permissions.
+**Causa:** Autenticação expirada ou permissões insuficientes.
 
-**Solution:**
+**Solução:**
 ```bash
 gcloud auth login
 gcloud auth application-default login
@@ -1753,23 +1753,23 @@ gcloud auth application-default login
 
 ---
 
-### Method 2 Specific Issues (Docker)
+### Problemas Específicos do Método 2 (Docker)
 
 #### ❌ `bash: openclaw: command not found` (exit 127)
 
-**Cause:** CLI alias not configured or using wrong image.
+**Causa:** Alias CLI não configurado ou usando imagem errada.
 
-**Solution:**
+**Solução:**
 ```bash
-# Verify using official image
+# Verificar se está usando imagem oficial
 docker service inspect openclaw_openclaw_gateway | grep Image
-# Should show: ghcr.io/openclaw/openclaw:2026.5.7
+# Deve mostrar: ghcr.io/openclaw/openclaw:2026.5.7
 
-# Create alias
+# Criar alias
 echo 'alias openclaw="docker exec -it \$(docker ps --filter name=openclaw -q) node dist/index.js"' >> ~/.bashrc
 source ~/.bashrc
 
-# Test
+# Testar
 openclaw --version
 ```
 
@@ -1777,19 +1777,19 @@ openclaw --version
 
 #### ❌ `Proxy headers detected from untrusted address`
 
-**Cause:** Traefik IP not in trusted proxies list.
+**Causa:** IP do Traefik não está na lista de proxies confiáveis.
 
-**Solution:**
+**Solução:**
 ```bash
-# Find Traefik IP in logs
+# Encontrar IP do Traefik nos logs
 docker service logs openclaw_openclaw_gateway | grep "peer="
-# Example: peer=10.0.1.3:54321
+# Exemplo: peer=10.0.1.3:54321
 
-# Add to trusted proxies
+# Adicionar aos proxies confiáveis
 openclaw config set \
   --batch-json '[{"path":"gateway.trustedProxies","value":["10.0.1.3"]}]'
 
-# Restart
+# Reiniciar
 docker service update --force openclaw_openclaw_gateway
 ```
 
@@ -1797,157 +1797,157 @@ docker service update --force openclaw_openclaw_gateway
 
 #### ❌ `JSON5: invalid character '"' at 11:2`
 
-**Cause:** Manual edit introduced typographic quotes or invalid JSON.
+**Causa:** Edição manual introduziu aspas tipográficas ou JSON inválido.
 
-**Solution:**
+**Solução:**
 ```bash
-# Restore last good backup
+# Restaurar último backup bom
 cp /opt/infra/alobexpress/openclaw/openclaw.json.last-good \
    /opt/infra/alobexpress/openclaw/openclaw.json
 
-# Or run doctor
+# Ou executar doctor
 openclaw doctor --fix
 
-# Restart service
+# Reiniciar serviço
 docker service update --force openclaw_openclaw_gateway
 ```
 
-**Important:** Never edit `openclaw.json` manually. Always use `openclaw config set`.
+**Importante:** Nunca edite `openclaw.json` manualmente. Sempre use `openclaw config set`.
 
 ---
 
-#### ❌ `404 Not Found` at domain
+#### ❌ `404 Not Found` no domínio
 
-**Cause:** Volume path mismatch or permission issues.
+**Causa:** Incompatibilidade de caminho de volume ou problemas de permissão.
 
-**Solution:**
+**Solução:**
 ```bash
-# Verify path exists
+# Verificar se o caminho existe
 ls -la /opt/infra/alobexpress/openclaw
 
-# Fix permissions (uid 1000 = node user)
+# Corrigir permissões (uid 1000 = usuário node)
 chown -R 1000:1000 /opt/infra/alobexpress/openclaw
 
-# Verify volume in service
+# Verificar volume no serviço
 docker service inspect openclaw_openclaw_gateway | grep -A5 Mounts
 
-# Restart service
+# Reiniciar serviço
 docker service update --force openclaw_openclaw_gateway
 ```
 
 ---
 
-#### ❌ Container keeps restarting
+#### ❌ Contêiner continua reiniciando
 
-**Cause:** Configuration error or missing required environment variables.
+**Causa:** Erro de configuração ou variáveis de ambiente obrigatórias faltando.
 
-**Solution:**
+**Solução:**
 ```bash
-# View logs
+# Ver logs
 docker service logs openclaw_openclaw_gateway --tail 100
 
-# Check environment variables
+# Verificar variáveis de ambiente
 docker exec -it $(docker ps --filter name=openclaw -q) env | grep OPENCLAW
 
-# Verify required vars are set
+# Verificar se variáveis obrigatórias estão definidas
 docker exec -it $(docker ps --filter name=openclaw -q) printenv OPENAI_API_KEY
 docker exec -it $(docker ps --filter name=openclaw -q) printenv OPENCLAW_GATEWAY_TOKEN
 
-# Update environment variables in Portainer and redeploy
+# Atualizar variáveis de ambiente no Portainer e reimplantar
 ```
 
 ---
 
-#### ❌ Healthcheck failing
+#### ❌ Healthcheck falhando
 
-**Cause:** Gateway not responding on port 18789.
+**Causa:** Gateway não está respondendo na porta 18789.
 
-**Solution:**
+**Solução:**
 ```bash
-# Check if port is listening inside container
+# Verificar se a porta está escutando dentro do contêiner
 docker exec -it $(docker ps --filter name=openclaw -q) curl http://127.0.0.1:18789/healthz
 
-# View detailed logs
+# Ver logs detalhados
 docker service logs openclaw_openclaw_gateway --tail 200
 
-# Check service health
+# Verificar saúde do serviço
 docker service ps openclaw_openclaw_gateway
 
-# If needed, increase start_period in healthcheck
-# Edit docker-compose.yml:
-# start_period: 180s  # Give more time for startup
+# Se necessário, aumentar start_period no healthcheck
+# Editar docker-compose.yml:
+# start_period: 180s  # Dar mais tempo para inicialização
 ```
 
 ---
 
-### Diagnostic Commands
+### Comandos de Diagnóstico
 
-**For PM2 Method:**
+**Para Método PM2:**
 ```bash
-# Full system check
+# Verificação completa do sistema
 openclaw doctor
 
-# View all config
+# Ver toda a configuração
 openclaw config get
 
-# Check PM2 status
+# Verificar status do PM2
 pm2 status
 pm2 monit
 
-# View logs
+# Ver logs
 pm2 logs openclaw-gateway --lines 100
 
-# Check port
+# Verificar porta
 ss -lntp | grep 18789
 
-# Test local access
+# Testar acesso local
 curl http://127.0.0.1:18789/healthz
 
-# Check Caddy
+# Verificar Caddy
 sudo systemctl status caddy
 sudo journalctl -u caddy -f
 ```
 
-**For Docker Method:**
+**Para Método Docker:**
 ```bash
-# Full system check
+# Verificação completa do sistema
 openclaw doctor
 
-# View all config
+# Ver toda a configuração
 openclaw config get
 
-# Check service status
+# Verificar status do serviço
 docker service ls | grep openclaw
 docker service ps openclaw_openclaw_gateway
 
-# View logs
+# Ver logs
 docker service logs -f openclaw_openclaw_gateway
 
-# Check container health
+# Verificar saúde do contêiner
 docker ps --filter name=openclaw
 
-# Enter container
+# Entrar no contêiner
 docker exec -it $(docker ps --filter name=openclaw -q) bash
 
-# Test inside container
+# Testar dentro do contêiner
 docker exec -it $(docker ps --filter name=openclaw -q) curl http://127.0.0.1:18789/healthz
 
-# Check Traefik
+# Verificar Traefik
 docker service logs traefik | grep openclaw
 
-# View service details
+# Ver detalhes do serviço
 docker service inspect openclaw_openclaw_gateway
 ```
 
 ---
 
-## 9. Maintenance
+## 9. Manutenção
 
 ### 9.1. Backup
 
-**What to Backup:**
+**O Que Fazer Backup:**
 
-| Path | Contains | Critical |
+| Caminho | Contém | Crítico |
 |------|----------|----------|
 | `~/.openclaw/openclaw.json` | Main configuration | Yes |
 | `~/.openclaw/workspace` | Agent workspaces | Yes |
@@ -1955,34 +1955,34 @@ docker service inspect openclaw_openclaw_gateway
 | `~/.openclaw/agents` | Agent configurations | Yes |
 | `~/.openclaw/logs` | Application logs | No |
 
-**For PM2 Method:**
+**Para Método PM2:**
 
 ```bash
-# Create backup
+# Criar backup
 tar -czf openclaw-backup-$(date +%F).tar.gz ~/.openclaw
 
-# If running as root
+# Se executando como root
 tar -czf openclaw-backup-$(date +%F).tar.gz /root/.openclaw
 
-# Store backup securely (contains secrets!)
-mv openclaw-backup-*.tar.gz /secure/backup/location/
+# Armazenar backup com segurança (contém segredos!)
+mv openclaw-backup-*.tar.gz /local/seguro/backup/
 ```
 
-**For Docker Method:**
+**Para Método Docker:**
 
 ```bash
-# Backup from host (data is in volume)
+# Backup do host (dados estão no volume)
 tar -czf openclaw-backup-$(date +%F).tar.gz /opt/infra/alobexpress/openclaw
 
-# Or backup from container
+# Ou backup do contêiner
 docker exec $(docker ps --filter name=openclaw -q) tar -czf /tmp/backup.tar.gz /home/node/.openclaw
 docker cp $(docker ps --filter name=openclaw -q):/tmp/backup.tar.gz ./openclaw-backup-$(date +%F).tar.gz
 
-# Store backup securely
-mv openclaw-backup-*.tar.gz /secure/backup/location/
+# Armazenar backup com segurança
+mv openclaw-backup-*.tar.gz /local/seguro/backup/
 ```
 
-**Automated Backup Script:**
+**Script de Backup Automatizado:**
 
 ```bash
 #!/bin/bash
@@ -1992,151 +1992,151 @@ BACKUP_DIR="/secure/backups/openclaw"
 DATE=$(date +%F)
 RETENTION_DAYS=30
 
-# Create backup
+# Criar backup
 tar -czf "$BACKUP_DIR/openclaw-$DATE.tar.gz" ~/.openclaw
 
-# Remove old backups
+# Remover backups antigos
 find "$BACKUP_DIR" -name "openclaw-*.tar.gz" -mtime +$RETENTION_DAYS -delete
 
-echo "Backup completed: openclaw-$DATE.tar.gz"
+echo "Backup concluído: openclaw-$DATE.tar.gz"
 ```
 
-**Schedule with cron:**
+**Agendar com cron:**
 
 ```bash
-# Edit crontab
+# Editar crontab
 crontab -e
 
-# Add daily backup at 2 AM
+# Adicionar backup diário às 2h da manhã
 0 2 * * * /usr/local/bin/backup-openclaw.sh
 ```
 
-**⚠️ Security Warning:** Backups contain API keys, tokens, and credentials. Never commit to public repositories or store in unsecured locations.
+**⚠️ Aviso de Segurança:** Backups contêm chaves API, tokens e credenciais. Nunca faça commit em repositórios públicos ou armazene em locais não seguros.
 
-### 9.2. Updates
+### 9.2. Atualizações
 
-#### Updating PM2 Method
+#### Atualizando Método PM2
 
 ```bash
-# Backup first!
+# Fazer backup primeiro!
 tar -czf openclaw-backup-before-update-$(date +%F).tar.gz ~/.openclaw
 
-# Update OpenClaw
+# Atualizar OpenClaw
 sudo npm install -g openclaw@latest
 
-# Restart gateway
+# Reiniciar gateway
 pm2 restart openclaw-gateway
 
-# Verify
+# Verificar
 openclaw --version
 openclaw doctor
 
-# Check logs
+# Verificar logs
 pm2 logs openclaw-gateway --lines 50
 ```
 
-#### Updating Docker Method
+#### Atualizando Método Docker
 
 ```bash
-# Backup first!
+# Fazer backup primeiro!
 tar -czf openclaw-backup-before-update-$(date +%F).tar.gz /opt/infra/alobexpress/openclaw
 
-# Update to specific version
+# Atualizar para versão específica
 docker service update --image ghcr.io/openclaw/openclaw:2026.5.8 openclaw_openclaw_gateway
 
-# Or update to latest
+# Ou atualizar para a mais recente
 docker service update --image ghcr.io/openclaw/openclaw:latest openclaw_openclaw_gateway
 
-# Monitor update
+# Monitorar atualização
 docker service ps openclaw_openclaw_gateway
 
-# Check logs
+# Verificar logs
 docker service logs -f openclaw_openclaw_gateway
 
-# Verify
+# Verificar
 openclaw --version
 openclaw doctor
 ```
 
-**Rollback if needed:**
+**Reverter se necessário:**
 
 ```bash
-# Docker has built-in rollback
+# Docker tem rollback integrado
 docker service rollback openclaw_openclaw_gateway
 
-# Or specify previous version
+# Ou especificar versão anterior
 docker service update --image ghcr.io/openclaw/openclaw:2026.5.7 openclaw_openclaw_gateway
 ```
 
-### 9.3. Monitoring
+### 9.3. Monitoramento
 
-#### PM2 Monitoring
+#### Monitoramento PM2
 
 ```bash
-# Real-time monitoring
+# Monitoramento em tempo real
 pm2 monit
 
-# Process status
+# Status dos processos
 pm2 status
 
-# View logs
+# Ver logs
 pm2 logs openclaw-gateway
 
-# CPU and memory usage
+# Uso de CPU e memória
 pm2 describe openclaw-gateway
 
-# Web dashboard (optional)
+# Dashboard web (opcional)
 pm2 web
-# Access at http://localhost:9615
+# Acessar em http://localhost:9615
 ```
 
-#### Docker Monitoring
+#### Monitoramento Docker
 
 ```bash
-# Service status
+# Status do serviço
 docker service ps openclaw_openclaw_gateway
 
-# Resource usage
+# Uso de recursos
 docker stats $(docker ps --filter name=openclaw -q)
 
 # Logs
 docker service logs -f openclaw_openclaw_gateway
 
-# Health status
+# Status de saúde
 docker ps --filter name=openclaw --format "table {{.Names}}\t{{.Status}}"
 
-# Portainer dashboard
-# Access at https://portainer.yourdomain.com
+# Dashboard Portainer
+# Acessar em https://portainer.seudominio.com
 ```
 
-### 9.4. Log Management
+### 9.4. Gerenciamento de Logs
 
-#### PM2 Logs
+#### Logs PM2
 
 ```bash
-# View logs
+# Ver logs
 pm2 logs openclaw-gateway
 
-# Clear logs
+# Limpar logs
 pm2 flush
 
-# Rotate logs (configure in ecosystem.config.js)
+# Rotacionar logs (configurar em ecosystem.config.js)
 pm2 install pm2-logrotate
 pm2 set pm2-logrotate:max_size 10M
 pm2 set pm2-logrotate:retain 7
 ```
 
-#### Docker Logs
+#### Logs Docker
 
 ```bash
-# View logs
+# Ver logs
 docker service logs openclaw_openclaw_gateway --tail 100
 
-# Follow logs
+# Seguir logs
 docker service logs -f openclaw_openclaw_gateway
 
-# Logs are automatically rotated by Docker
-# Configure in /etc/docker/daemon.json:
+# Logs são automaticamente rotacionados pelo Docker
+# Configurar em /etc/docker/daemon.json:
 ```
 
 ```json
@@ -2149,99 +2149,99 @@ docker service logs -f openclaw_openclaw_gateway
 }
 ```
 
-### 9.5. Performance Tuning
+### 9.5. Ajuste de Performance
 
-#### VM Resources (Both Methods)
+#### Recursos da VM (Ambos os Métodos)
 
-**Monitor resource usage:**
+**Monitorar uso de recursos:**
 
 ```bash
-# CPU and memory
+# CPU e memória
 htop
 
-# Disk usage
+# Uso de disco
 df -h
 du -sh ~/.openclaw/*
 
-# Network
+# Rede
 netstat -tulpn | grep 18789
 ```
 
-**When to scale up:**
+**Quando escalar:**
 
-| Metric | Threshold | Action |
+| Métrica | Limite | Ação |
 |--------|-----------|--------|
-| CPU usage | >80% sustained | Upgrade to e2-standard-4 |
-| Memory usage | >90% | Add more RAM |
-| Disk usage | >80% | Increase disk size |
-| Response time | >2s | Check logs, optimize agents |
+| Uso de CPU | >80% sustentado | Atualizar para e2-standard-4 |
+| Uso de memória | >90% | Adicionar mais RAM |
+| Uso de disco | >80% | Aumentar tamanho do disco |
+| Tempo de resposta | >2s | Verificar logs, otimizar agentes |
 
-#### Docker Resource Limits
+#### Limites de Recursos Docker
 
-Edit `docker-compose.yml`:
+Editar `docker-compose.yml`:
 
 ```yaml
 resources:
   reservations:
-    cpus: "0.5"      # Increase if needed
-    memory: 1024M    # Increase if needed
+    cpus: "0.5"      # Aumentar se necessário
+    memory: 1024M    # Aumentar se necessário
   limits:
-    cpus: "4.0"      # Maximum CPUs
-    memory: 8192M    # Maximum memory
+    cpus: "4.0"      # CPUs máximas
+    memory: 8192M    # Memória máxima
 ```
 
-Redeploy:
+Reimplantar:
 
 ```bash
 docker stack deploy -c docker-compose.yml openclaw
 ```
 
-### 9.6. Health Checks
+### 9.6. Verificações de Saúde
 
-#### Manual Health Check
+#### Verificação Manual de Saúde
 
 ```bash
-# Check gateway health
+# Verificar saúde do gateway
 curl http://localhost:18789/healthz
 
-# Expected response: 200 OK
+# Resposta esperada: 200 OK
 ```
 
-#### Automated Monitoring
+#### Monitoramento Automatizado
 
-**For PM2 (using cron):**
+**Para PM2 (usando cron):**
 
 ```bash
 #!/bin/bash
 # /usr/local/bin/check-openclaw-health.sh
 
 if ! curl -sf http://localhost:18789/healthz > /dev/null; then
-    echo "OpenClaw health check failed, restarting..."
+    echo "Verificação de saúde do OpenClaw falhou, reiniciando..."
     pm2 restart openclaw-gateway
-    # Send alert (email, Slack, etc.)
+    # Enviar alerta (email, Slack, etc.)
 fi
 ```
 
-**For Docker (built-in):**
+**Para Docker (integrado):**
 
-Healthcheck is already configured in docker-compose.yml. Docker automatically restarts unhealthy containers.
+Healthcheck já está configurado no docker-compose.yml. Docker reinicia automaticamente contêineres não saudáveis.
 
-### 9.7. Security Updates
+### 9.7. Atualizações de Segurança
 
 ```bash
-# Update system packages (both methods)
+# Atualizar pacotes do sistema (ambos os métodos)
 sudo apt update
 sudo apt upgrade -y
 
-# Update Node.js (PM2 method)
+# Atualizar Node.js (método PM2)
 curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Update Docker (Docker method)
+# Atualizar Docker (método Docker)
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io
 
-# Restart services after updates
+# Reiniciar serviços após atualizações
 # PM2:
 pm2 restart openclaw-gateway
 
@@ -2251,207 +2251,187 @@ docker service update --force openclaw_openclaw_gateway
 
 ---
 
-## 10. Security Checklist
+## 10. Checklist de Segurança
 
----
+Antes de ir para produção, verifique se todas as medidas de segurança estão implementadas:
 
-## 10. Security Checklist
+### Segurança da Infraestrutura
 
-Before going to production, verify all security measures are in place:
+#### Comum (Ambos os Métodos)
 
-### Infrastructure Security
-
-#### Common (Both Methods)
-
-- [ ] **Firewall configured** - Only ports 22, 80, 443 open publicly
-- [ ] **Port 18789 NOT exposed** - Gateway only accessible via reverse proxy
-- [ ] **Static IP reserved** - Prevents DNS breakage on VM restart
-- [ ] **SSH key authentication** - Password authentication disabled
-- [ ] **Strong gateway token** - Minimum 32 characters, randomly generated
+- [ ] **Firewall configurado** - Apenas portas 22, 80, 443 abertas publicamente
+- [ ] **Porta 18789 NÃO exposta** - Gateway acessível apenas via proxy reverso
+- [ ] **IP estático reservado** - Previne quebra de DNS ao reiniciar VM
+- [ ] **Autenticação por chave SSH** - Autenticação por senha desabilitada
+- [ ] **Token de gateway forte** - Mínimo 32 caracteres, gerado aleatoriamente
 - [ ] **Device pairing enabled** - Only approved devices can connect
 - [ ] **HTTPS enforced** - All traffic encrypted (Cloudflare/Traefik)
 - [ ] **Regular backups** - Automated daily backups to secure location
-- [ ] **Backup encryption** - Backups contain secrets, must be encrypted
-- [ ] **System updates** - OS and packages regularly updated
+- [ ] **Criptografia de backup** - Backups contêm segredos, devem ser criptografados
+- [ ] **Atualizações do sistema** - SO e pacotes atualizados regularmente
 
-#### PM2 Method Specific
+#### Específico do Método PM2
 
-- [ ] **Cloudflare proxy active** - Orange cloud enabled for DDoS protection
-- [ ] **SSL/TLS mode: Full** - Not Flexible (insecure)
-- [ ] **Caddy auto-updates** - SSL certificates renew automatically
-- [ ] **PM2 startup configured** - Gateway starts on boot
-- [ ] **Log rotation enabled** - Prevents disk space issues
+- [ ] **Proxy Cloudflare ativo** - Nuvem laranja habilitada para proteção DDoS
+- [ ] **Modo SSL/TLS: Full** - Não Flexible (inseguro)
+- [ ] **Auto-atualizações Caddy** - Certificados SSL renovam automaticamente
+- [ ] **Startup PM2 configurado** - Gateway inicia na inicialização
+- [ ] **Rotação de logs habilitada** - Previne problemas de espaço em disco
 
-#### Docker Method Specific
+#### Específico do Método Docker
 
-- [ ] **Traefik SSL configured** - Let's Encrypt certificates working
-- [ ] **Trusted proxies set** - Traefik IP in gateway config
-- [ ] **Container user** - Running as non-root (uid 1000)
-- [ ] **Volume permissions** - Correct ownership (1000:1000)
-- [ ] **Resource limits** - CPU and memory limits configured
-- [ ] **Health checks** - Container health monitoring active
-- [ ] **Secrets management** - API keys in environment variables, not in image
-- [ ] **Image pinned** - Using specific version tag, not `latest`
+- [ ] **SSL Traefik configurado** - Certificados Let's Encrypt funcionando
+- [ ] **Proxies confiáveis definidos** - IP do Traefik na configuração do gateway
+- [ ] **Usuário do contêiner** - Executando como não-root (uid 1000)
+- [ ] **Permissões de volume** - Propriedade correta (1000:1000)
+- [ ] **Limites de recursos** - Limites de CPU e memória configurados
+- [ ] **Verificações de saúde** - Monitoramento de saúde do contêiner ativo
+- [ ] **Gerenciamento de segredos** - Chaves API em variáveis de ambiente, não na imagem
+- [ ] **Imagem fixada** - Usando tag de versão específica, não `latest`
 
-### API Security
+### Segurança de API
 
-- [ ] **OpenAI usage limits** - Monthly spending cap configured
-- [ ] **OpenAI key restricted** - Not shared publicly or in git
-- [ ] **Google Places key restricted** - IP and API restrictions applied
-- [ ] **Notion integration scoped** - Only shared with required pages
-- [ ] **Telegram bot token secure** - Not exposed in logs or errors
-- [ ] **GitHub token scoped** - Minimum required permissions
-- [ ] **All API keys rotated** - Regular rotation schedule (90 days)
+- [ ] **Limites de uso OpenAI** - Limite de gastos mensais configurado
+- [ ] **Chave OpenAI restrita** - Não compartilhada publicamente ou no git
+- [ ] **Chave Google Places restrita** - Restrições de IP e API aplicadas
+- [ ] **Integração Notion com escopo** - Compartilhada apenas com páginas necessárias
+- [ ] **Token bot Telegram seguro** - Não exposto em logs ou erros
+- [ ] **Token GitHub com escopo** - Permissões mínimas necessárias
+- [ ] **Todas as chaves API rotacionadas** - Cronograma de rotação regular (90 dias)
 
-### Application Security
+### Segurança da Aplicação
 
-- [ ] **Allowed origins configured** - Only your domains whitelisted
-- [ ] **Command owner set** - Privileged commands restricted to owner
-- [ ] **No secrets in config** - API keys in env vars or secure storage
-- [ ] **Config validation** - `openclaw doctor` passes without errors
-- [ ] **Audit logs enabled** - Track all administrative actions
-- [ ] **Rate limiting** - Prevent API abuse
+- [ ] **Origens permitidas configuradas** - Apenas seus domínios na lista branca
+- [ ] **Proprietário de comando definido** - Comandos privilegiados restritos ao proprietário
+- [ ] **Sem segredos na configuração** - Chaves API em variáveis de ambiente ou armazenamento seguro
+- [ ] **Validação de configuração** - `openclaw doctor` passa sem erros
+- [ ] **Logs de auditoria habilitados** - Rastrear todas as ações administrativas
+- [ ] **Limitação de taxa** - Prevenir abuso de API
 
-### Monitoring & Alerts
+### Monitoramento e Alertas
 
-- [ ] **Health checks** - Automated monitoring of gateway status
-- [ ] **Log monitoring** - Alerts on errors or suspicious activity
-- [ ] **Resource monitoring** - Alerts on high CPU/memory/disk usage
-- [ ] **Cost monitoring** - Google Cloud and OpenAI budget alerts
-- [ ] **Uptime monitoring** - External service checks availability
-- [ ] **Backup verification** - Regular restore tests
+- [ ] **Verificações de saúde** - Monitoramento automatizado do status do gateway
+- [ ] **Monitoramento de logs** - Alertas sobre erros ou atividade suspeita
+- [ ] **Monitoramento de recursos** - Alertas sobre alto uso de CPU/memória/disco
+- [ ] **Monitoramento de custos** - Alertas de orçamento Google Cloud e OpenAI
+- [ ] **Monitoramento de uptime** - Serviço externo verifica disponibilidade
+- [ ] **Verificação de backup** - Testes regulares de restauração
 
-### Compliance
+### Conformidade
 
-- [ ] **Data retention policy** - Logs and backups retention defined
-- [ ] **Access control** - Only authorized personnel have SSH access
-- [ ] **Incident response plan** - Documented procedure for security incidents
-- [ ] **Dependency updates** - Regular updates for security patches
-- [ ] **Vulnerability scanning** - Regular security audits
+- [ ] **Política de retenção de dados** - Retenção de logs e backups definida
+- [ ] **Controle de acesso** - Apenas pessoal autorizado tem acesso SSH
+- [ ] **Plano de resposta a incidentes** - Procedimento documentado para incidentes de segurança
+- [ ] **Atualizações de dependências** - Atualizações regulares para patches de segurança
+- [ ] **Varredura de vulnerabilidades** - Auditorias de segurança regulares
 
-### Security Testing
+### Testes de Segurança
 
 ```bash
-# Test firewall
-nmap -p 1-65535 YOUR_VM_IP
-# Should only show 22, 80, 443 open
+# Testar firewall
+nmap -p 1-65535 SEU_IP_VM
+# Deve mostrar apenas 22, 80, 443 abertas
 
-# Test SSL
-curl -I https://openclaw.yourdomain.com
-# Should return 200 OK with valid certificate
+# Testar SSL
+curl -I https://openclaw.seudominio.com
+# Deve retornar 200 OK com certificado válido
 
-# Test gateway token
-curl -H "Authorization: Bearer wrong-token" https://openclaw.yourdomain.com
-# Should return 401 Unauthorized
+# Testar token do gateway
+curl -H "Authorization: Bearer token-errado" https://openclaw.seudominio.com
+# Deve retornar 401 Unauthorized
 
-# Test health endpoint
-curl https://openclaw.yourdomain.com/healthz
-# Should return 200 OK
+# Testar endpoint de saúde
+curl https://openclaw.seudominio.com/healthz
+# Deve retornar 200 OK
 
-# Verify no secrets in logs
+# Verificar se não há segredos nos logs
 pm2 logs openclaw-gateway | grep -i "sk-"
-# Should return nothing
+# Não deve retornar nada
 
-# Docker: Check container security
+# Docker: Verificar segurança do contêiner
 docker scan ghcr.io/openclaw/openclaw:2026.5.7
 ```
 
-### Security Incident Response
+### Resposta a Incidentes de Segurança
 
-**If API key is compromised:**
+**Se chave API for comprometida:**
 
-1. **Immediately revoke** the compromised key
-2. **Generate new key** in the provider dashboard
-3. **Update configuration**:
+1. **Revogar imediatamente** a chave comprometida
+2. **Gerar nova chave** no dashboard do provedor
+3. **Atualizar configuração**:
    ```bash
    # PM2
-   openclaw config set agents.main.auth.openai.apiKey NEW_KEY
+   openclaw config set agents.main.auth.openai.apiKey NOVA_CHAVE
    pm2 restart openclaw-gateway
    
    # Docker
-   # Update in Portainer environment variables
+   # Atualizar nas variáveis de ambiente do Portainer
    docker service update --force openclaw_openclaw_gateway
    ```
-4. **Review logs** for unauthorized usage
-5. **Monitor billing** for unexpected charges
-6. **Document incident** for future reference
+4. **Revisar logs** para uso não autorizado
+5. **Monitorar faturamento** para cobranças inesperadas
+6. **Documentar incidente** para referência futura
 
-**If gateway token is compromised:**
+**Se token do gateway for comprometido:**
 
-1. **Generate new token**:
+1. **Gerar novo token**:
    ```bash
    openclaw doctor --generate-gateway-token
    ```
-2. **Update configuration**:
+2. **Atualizar configuração**:
    ```bash
-   openclaw config set gateway.auth.token NEW_TOKEN
+   openclaw config set gateway.auth.token NOVO_TOKEN
    ```
-3. **Restart gateway**
-4. **Revoke all devices**:
+3. **Reiniciar gateway**
+4. **Revogar todos os dispositivos**:
    ```bash
    openclaw devices clear
    ```
-5. **Re-approve trusted devices** only
+5. **Re-aprovar apenas dispositivos confiáveis**
 
-**If VM is compromised:**
+**Se VM for comprometida:**
 
-1. **Isolate the VM** - Disconnect from network
-2. **Create snapshot** - For forensic analysis
-3. **Deploy new VM** - From clean image
-4. **Restore from backup** - Use last known good backup
-5. **Rotate all credentials** - API keys, tokens, passwords
-6. **Review access logs** - Identify breach source
-7. **Update security measures** - Prevent recurrence
-
----
-
-## 11. Reference
-
-- [ ] Cloudflare com proxy laranja ativo.
-- [ ] SSL/TLS em modo `Full`.
-- [ ] Porta `18789` não exposta publicamente.
-- [ ] Gateway token forte.
-- [ ] Device pairing aprovado somente para seus dispositivos.
-- [ ] OpenAI usage limit configurado.
-- [ ] Google Cloud Budget Alerts configurados.
-- [ ] Google Places API key restrita.
-- [ ] Notion integration compartilhada só com páginas necessárias.
-- [ ] Nenhum token salvo em GitHub público.
-- [ ] Backup seguro da pasta `.openclaw`.
+1. **Isolar a VM** - Desconectar da rede
+2. **Criar snapshot** - Para análise forense
+3. **Implantar nova VM** - A partir de imagem limpa
+4. **Restaurar do backup** - Usar último backup conhecido bom
+5. **Rotacionar todas as credenciais** - Chaves API, tokens, senhas
+6. **Revisar logs de acesso** - Identificar fonte da violação
+7. **Atualizar medidas de segurança** - Prevenir recorrência
 
 ---
 
-## 11. Reference
+## 11. Referência
 
-### Quick Command Reference
+### Referência Rápida de Comandos
 
-#### PM2 Method Commands
+#### Comandos do Método PM2
 
 ```bash
-# Status and Monitoring
-pm2 status                              # Show all processes
-pm2 monit                               # Real-time monitoring dashboard
-pm2 logs openclaw-gateway               # View logs
-pm2 logs openclaw-gateway --lines 100   # Last 100 lines
+# Status e Monitoramento
+pm2 status                              # Mostrar todos os processos
+pm2 monit                               # Dashboard de monitoramento em tempo real
+pm2 logs openclaw-gateway               # Ver logs
+pm2 logs openclaw-gateway --lines 100   # Últimas 100 linhas
 
-# Process Management
-pm2 restart openclaw-gateway            # Restart gateway
-pm2 stop openclaw-gateway               # Stop gateway
-pm2 delete openclaw-gateway             # Remove from PM2
-pm2 save                                # Save process list
-pm2 startup                             # Enable auto-start on boot
+# Gerenciamento de Processos
+pm2 restart openclaw-gateway            # Reiniciar gateway
+pm2 stop openclaw-gateway               # Parar gateway
+pm2 delete openclaw-gateway             # Remover do PM2
+pm2 save                                # Salvar lista de processos
+pm2 startup                             # Habilitar auto-início na inicialização
 
 # Logs
-pm2 flush                               # Clear all logs
-pm2 logs --err                          # Show only errors
+pm2 flush                               # Limpar todos os logs
+pm2 logs --err                          # Mostrar apenas erros
 
-# System
-sudo systemctl status caddy             # Check Caddy status
-sudo systemctl restart caddy            # Restart Caddy
-sudo journalctl -u caddy -f             # Follow Caddy logs
+# Sistema
+sudo systemctl status caddy             # Verificar status do Caddy
+sudo systemctl restart caddy            # Reiniciar Caddy
+sudo journalctl -u caddy -f             # Seguir logs do Caddy
 ```
 
-#### Docker Method Commands
+#### Comandos do Método Docker
 
 ```bash
 # Service Management
@@ -2617,102 +2597,102 @@ Internet → Traefik (SSL/Proxy) → Docker Swarm → OpenClaw Container → AI 
 
 **Pros:**
 - Easy scaling
-- Built-in rollback
-- Visual management (Portainer)
-- Isolated environment
-- Quick updates
+- Rollback integrado
+- Gerenciamento visual (Portainer)
+- Ambiente isolado
+- Atualizações rápidas
 
-**Cons:**
-- More complex setup
-- Docker layer overhead
-- Requires container knowledge
+**Contras:**
+- Configuração mais complexa
+- Overhead da camada Docker
+- Requer conhecimento de contêineres
 
-### Common Error Patterns
+### Padrões Comuns de Erros
 
-| Error Message | Likely Cause | Quick Fix |
+| Mensagem de Erro | Causa Provável | Correção Rápida |
 |---------------|--------------|-----------|
-| `origin not allowed` | CORS not configured | Add domain to `allowedOrigins` |
-| `gateway token missing` | Token not entered | Enter token from config file |
-| `device pairing required` | New device | Approve with `openclaw devices approve` |
-| `No API key found` | API key not set | Configure with `openclaw config set` |
-| `HTTP ERROR 502` | Gateway not running | Check logs, restart service |
-| `bash: openclaw: command not found` | CLI not in PATH (Docker) | Create alias or use `docker exec` |
-| `Proxy headers from untrusted` | Traefik IP not trusted | Add to `trustedProxies` |
-| `JSON5: invalid character` | Manual config edit | Restore backup, use CLI only |
-| `gateway.mode is unset` | Mode not configured | Set to `local` |
-| `404 Not Found` | Volume/path issue | Check permissions and paths |
+| `origin not allowed` | CORS não configurado | Adicionar domínio a `allowedOrigins` |
+| `gateway token missing` | Token não inserido | Inserir token do arquivo de configuração |
+| `device pairing required` | Novo dispositivo | Aprovar com `openclaw devices approve` |
+| `No API key found` | Chave API não definida | Configurar com `openclaw config set` |
+| `HTTP ERROR 502` | Gateway não está rodando | Verificar logs, reiniciar serviço |
+| `bash: openclaw: command not found` | CLI não está no PATH (Docker) | Criar alias ou usar `docker exec` |
+| `Proxy headers from untrusted` | IP do Traefik não confiável | Adicionar a `trustedProxies` |
+| `JSON5: invalid character` | Edição manual de config | Restaurar backup, usar apenas CLI |
+| `gateway.mode is unset` | Modo não configurado | Definir como `local` |
+| `404 Not Found` | Problema de volume/caminho | Verificar permissões e caminhos |
 
-### Performance Benchmarks
+### Benchmarks de Performance
 
-| Metric | e2-standard-2 | e2-standard-4 | Notes |
+| Métrica | e2-standard-2 | e2-standard-4 | Notas |
 |--------|---------------|---------------|-------|
-| **Concurrent Agents** | 2-3 | 5-8 | Depends on complexity |
-| **Response Time** | <1s | <500ms | Simple queries |
-| **Memory Usage** | 2-4 GB | 4-8 GB | With active agents |
-| **CPU Usage** | 40-60% | 20-40% | Under load |
-| **Recommended Users** | 1-5 | 5-20 | Concurrent users |
+| **Agentes Concorrentes** | 2-3 | 5-8 | Depende da complexidade |
+| **Tempo de Resposta** | <1s | <500ms | Consultas simples |
+| **Uso de Memória** | 2-4 GB | 4-8 GB | Com agentes ativos |
+| **Uso de CPU** | 40-60% | 20-40% | Sob carga |
+| **Usuários Recomendados** | 1-5 | 5-20 | Usuários concorrentes |
 
-### Cost Estimates (Monthly)
+### Estimativas de Custo (Mensal)
 
-| Component | Cost Range | Notes |
+| Componente | Faixa de Custo | Notas |
 |-----------|------------|-------|
-| **GCP VM (e2-standard-2)** | $50-70 | us-central1 region |
-| **GCP VM (e2-standard-4)** | $100-140 | us-central1 region |
-| **Static IP** | $3-5 | If not attached to running VM |
-| **Disk (50 GB SSD)** | $8-10 | Standard persistent disk |
-| **OpenAI API** | $10-200+ | Highly variable by usage |
-| **Cloudflare** | $0 | Free tier sufficient |
-| **Domain** | $10-15/year | Varies by registrar |
-| **Total (Small)** | $70-100 | e2-standard-2 + light API usage |
-| **Total (Medium)** | $150-300 | e2-standard-4 + moderate API usage |
+| **VM GCP (e2-standard-2)** | $50-70 | Região us-central1 |
+| **VM GCP (e2-standard-4)** | $100-140 | Região us-central1 |
+| **IP Estático** | $3-5 | Se não anexado a VM em execução |
+| **Disco (50 GB SSD)** | $8-10 | Disco persistente padrão |
+| **API OpenAI** | $10-200+ | Altamente variável por uso |
+| **Cloudflare** | $0 | Plano gratuito suficiente |
+| **Domínio** | $10-15/ano | Varia por registrador |
+| **Total (Pequeno)** | $70-100 | e2-standard-2 + uso leve de API |
+| **Total (Médio)** | $150-300 | e2-standard-4 + uso moderado de API |
 
-### Support and Community
+### Suporte e Comunidade
 
-| Resource | Link |
+| Recurso | Link |
 |----------|------|
 | **GitHub Issues** | https://github.com/openclaw/openclaw/issues |
-| **Discord Community** | Check OpenClaw website |
-| **Documentation** | https://docs.openclaw.ai/ |
-| **Release Notes** | https://github.com/openclaw/openclaw/releases |
+| **Comunidade Discord** | Verificar site do OpenClaw |
+| **Documentação** | https://docs.openclaw.ai/ |
+| **Notas de Lançamento** | https://github.com/openclaw/openclaw/releases |
 
 ---
 
-## 📝 Final Notes
+## 📝 Notas Finais
 
-### Best Practices
+### Melhores Práticas
 
-1. **Always backup before changes** - Configuration, updates, or major changes
-2. **Use `openclaw config set`** - Never manually edit `openclaw.json`
-3. **Monitor API costs** - Set spending limits on all providers
-4. **Keep secrets secure** - Never commit API keys to git
-5. **Test in staging first** - If possible, test updates before production
-6. **Document customizations** - Keep notes on your specific setup
-7. **Regular security audits** - Review access logs and permissions monthly
-8. **Automate backups** - Set up cron jobs for daily backups
-9. **Monitor resource usage** - Set up alerts for high CPU/memory/disk
-10. **Stay updated** - Follow OpenClaw releases for security patches
+1. **Sempre faça backup antes de mudanças** - Configuração, atualizações ou mudanças importantes
+2. **Use `openclaw config set`** - Nunca edite `openclaw.json` manualmente
+3. **Monitore custos de API** - Defina limites de gastos em todos os provedores
+4. **Mantenha segredos seguros** - Nunca faça commit de chaves API no git
+5. **Teste em staging primeiro** - Se possível, teste atualizações antes da produção
+6. **Documente personalizações** - Mantenha notas sobre sua configuração específica
+7. **Auditorias de segurança regulares** - Revise logs de acesso e permissões mensalmente
+8. **Automatize backups** - Configure cron jobs para backups diários
+9. **Monitore uso de recursos** - Configure alertas para alto uso de CPU/memória/disco
+10. **Mantenha-se atualizado** - Acompanhe lançamentos do OpenClaw para patches de segurança
 
-### Getting Help
+### Obtendo Ajuda
 
-If you encounter issues not covered in this guide:
+Se você encontrar problemas não cobertos neste guia:
 
-1. **Check logs first** - Most issues are visible in logs
-2. **Run diagnostics** - `openclaw doctor` catches common problems
-3. **Search GitHub issues** - Someone may have had the same problem
-4. **Check official docs** - Documentation is regularly updated
-5. **Ask the community** - Discord or GitHub discussions
-6. **Provide context** - Include logs, config (redact secrets), and steps to reproduce
+1. **Verifique os logs primeiro** - A maioria dos problemas é visível nos logs
+2. **Execute diagnósticos** - `openclaw doctor` detecta problemas comuns
+3. **Pesquise issues no GitHub** - Alguém pode ter tido o mesmo problema
+4. **Consulte a documentação oficial** - Documentação é atualizada regularmente
+5. **Pergunte à comunidade** - Discord ou discussões no GitHub
+6. **Forneça contexto** - Inclua logs, config (oculte segredos) e passos para reproduzir
 
-### Contributing
+### Contribuindo
 
-Found an error in this guide or have improvements? Contributions are welcome!
-
----
-
-**Last Updated:** 2026-05-15  
-**OpenClaw Version:** 2026.5.7  
-**Guide Version:** 2.0
+Encontrou um erro neste guia ou tem melhorias? Contribuições são bem-vindas!
 
 ---
 
-Made with ❤️ for the OpenClaw community
+**Última Atualização:** 2026-05-15  
+**Versão OpenClaw:** 2026.5.7  
+**Versão do Guia:** 2.0
+
+---
+
+Feito com ❤️ para a comunidade OpenClaw
