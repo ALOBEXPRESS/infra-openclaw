@@ -1,0 +1,111 @@
+version: "3.7"
+
+services:
+  openclaw_gateway:
+    # Versao rapida: instala OpenClaw no start. Funciona, mas o ideal depois eh criar uma imagem propria.
+    image: node:22-bookworm
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    working_dir: /root/.openclaw
+
+    command: >
+      bash -lc "
+        apt-get update &&
+        apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        python3 \
+        make \
+        g++ \
+        chromium \
+        fonts-liberation \
+        libatk-bridge2.0-0 \
+        libatk1.0-0 \
+        libnss3 \
+        libxss1 \
+        libasound2 \
+        libgbm1 \
+        xdg-utils &&
+        rm -rf /var/lib/apt/lists/* &&
+        npm install -g openclaw@2026.5.7 &&
+        openclaw gateway --port $${OPENCLAW_GATEWAY_PORT:-18789}
+      "
+
+    networks:
+      - network_swarm_public
+
+    environment:
+      - NODE_ENV=production
+      - OPENCLAW_GATEWAY_PORT=18789
+      - OPENCLAW_CONFIG=/root/.openclaw/openclaw.json
+
+      # Preencher no Portainer em Environment variables da stack.
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_HOOKS_TOKEN=${OPENCLAW_HOOKS_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - GOPLACES_API_KEY=${GOPLACES_API_KEY}
+      - NOTION_API_KEY=${NOTION_API_KEY}
+      - TELEGRAM_DEFAULT_BOT_TOKEN=${TELEGRAM_DEFAULT_BOT_TOKEN}
+      - TELEGRAM_PABLIN_BOT_TOKEN=${TELEGRAM_PABLIN_BOT_TOKEN}
+      - TELEGRAM_MARCOS_BOT_TOKEN=${TELEGRAM_MARCOS_BOT_TOKEN}
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN:-}
+      - FIGMA_API_KEY=${FIGMA_API_KEY:-}
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN:-}
+      - N8N_BEARER_TOKEN=${N8N_BEARER_TOKEN:-}
+
+    volumes:
+      # Restaurar o bundle neste caminho do host.
+      # O container mantem os caminhos originais do backup em /root/.openclaw.
+      - /opt/alobexpress/openclaw:/root/.openclaw
+
+    tmpfs:
+      - /tmp:size=1g
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+          # Se voce usa label especifica no node principal, pode trocar por:
+          # - node.labels.app == n8n
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+        limits:
+          cpus: "2.0"
+          memory: 61442M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+        failure_action: rollback
+      labels:
+        - "traefik.enable=true"
+        - "traefik.swarm.network=network_swarm_public"
+        - "traefik.http.routers.openclaw.rule=Host(`openclaw.meudominio.com.br`)"
+        - "traefik.http.routers.openclaw.entrypoints=websecure"
+        - "traefik.http.routers.openclaw.priority=1"
+        - "traefik.http.routers.openclaw.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.openclaw.service=openclaw_gateway"
+        - "traefik.http.services.openclaw_gateway.loadbalancer.server.port=18789"
+        - "traefik.http.services.openclaw_gateway.loadbalancer.passHostHeader=true"
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:18789/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+
+networks:
+  network_swarm_public:
+    external: true
+    name: network_swarm_public

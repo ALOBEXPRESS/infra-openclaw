@@ -1,0 +1,109 @@
+Você é o agente main com full access neste novo servidor Docker.
+
+Missão: restaurar completamente uma instalação OpenClaw da Alob Express a partir do arquivo:
+
+/openclaw-migration-shareable-20260511-144720.tar.gz
+
+Objetivo: deixar este ambiente novo igual ao ambiente antigo, com os agentes CJ/main, Pablin Maca e Marcos Zuckebergas funcionando em containers Docker, preservando personas, memórias, workspaces, sessões, rotas Telegram, tools, workflows e comportamento.
+
+Faça assim:
+
+1. Crie o diretório base:
+   /srv/openclaw
+
+2. Extraia o arquivo:
+   /openclaw-migration-shareable-20260511-144720.tar.gz
+   dentro de /srv/openclaw ou em um diretório temporário, preservando a estrutura.
+
+3. Leia primeiro:
+   README.md
+   docs/RESTORE.md
+   docs/MIGRATION_CHECKLIST.md
+   docs/DEPENDENCY_MAP.md
+   docs/BOTS_TELEGRAM.md
+
+4. Monte a estrutura final esperada:
+   /srv/openclaw/.env
+   /srv/openclaw/docker-compose.yml
+   /srv/openclaw/openclaw.json
+   /srv/openclaw/secrets/
+   /srv/openclaw/workspace/
+   /srv/openclaw/workspace-pablin/
+   /srv/openclaw/workspace-marcos/
+   /srv/openclaw/agents/
+
+5. Copie:
+   config/openclaw.json.template para /srv/openclaw/openclaw.json
+   .env.example para /srv/openclaw/.env
+   workspaces/main para /srv/openclaw/workspace
+   workspaces/pablin para /srv/openclaw/workspace-pablin
+   workspaces/marcos para /srv/openclaw/workspace-marcos
+   agents-state para /srv/openclaw/agents
+
+6. NÃO invente tokens.
+   Me peça os valores quando precisar preencher:
+   OPENCLAW_GATEWAY_TOKEN
+   OPENCLAW_HOOKS_TOKEN
+   OPENAI_API_KEY
+   FIRECRAWL_API_KEY
+   GOPLACES_API_KEY
+   NOTION_API_KEY
+   TELEGRAM_DEFAULT_BOT_TOKEN
+   TELEGRAM_PABLIN_BOT_TOKEN
+   TELEGRAM_MARCOS_BOT_TOKEN
+
+7. Crie os arquivos de secrets:
+   /srv/openclaw/secrets/telegram-pablin.token
+   /srv/openclaw/secrets/telegram-marcos.token
+
+   Com chmod 600.
+
+8. Atenção aos bots:
+   Pablin: @pablin_alobexpress_bot
+   Marcos: @marcos_alobexpress_bot
+   CJ/main: bot default via TELEGRAM_DEFAULT_BOT_TOKEN
+
+9. Use o docker-compose.yml incluso como base.
+   Se precisar adaptar para Docker Swarm, mantenha os volumes persistentes:
+   openclaw.json
+   secrets
+   workspace
+   workspace-pablin
+   workspace-marcos
+   agents
+
+10. Porta principal:
+   18789/tcp
+
+11. Antes de subir, valide:
+   docker compose config
+   estrutura de arquivos
+   permissões dos secrets
+   presença dos workspaces
+   presença dos agents-state
+
+12. Suba com:
+   docker compose --env-file .env up -d
+
+13. Depois valide:
+   docker ps
+   logs do container
+   openclaw gateway status ou equivalente dentro do container
+   teste dos bots Telegram com /start
+   teste de rota:
+     Telegram pablin -> agentId pablin
+     Telegram marcos -> agentId marcos
+     Telegram default -> main/CJ
+
+14. Se houver conflito de Telegram polling, pare o servidor antigo antes de ativar o novo.
+   Não deixe dois servidores usando os mesmos tokens Telegram ao mesmo tempo.
+
+15. Não exponha tokens no log, resposta ou arquivos versionados.
+   Se precisar mostrar configuração, redija os segredos.
+
+No final, me entregue:
+1. O que foi restaurado
+2. O que ficou pendente
+3. Comandos exatos usados
+4. Checklist de validação
+5. Próximo passo para eu testar
